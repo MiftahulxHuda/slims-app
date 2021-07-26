@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import {
-    DrawerContentScrollView,
-    DrawerItem
-} from '@react-navigation/drawer';
-import Icon from 'react-native-vector-icons/FontAwesome5';
-import { Avatar, Text, Divider } from 'react-native-elements';
-import { ScrollView, TouchableOpacity } from 'react-native-gesture-handler';
+import { DrawerContentScrollView } from '@react-navigation/drawer'
+import React, { useState } from 'react'
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native'
+import Icon from 'react-native-vector-icons/Feather';
 
+import { COLORS, FONTS, images, SIZES } from '../constants';
+import { DRAWER_ITEMS } from '../constants/drawer_items';
+import { AuthContext } from '../contexts/AuthContext';
 import OuterDrawerItem from '../components/OuterDrawerItem';
 
 const DrawerContent = (props) => {
@@ -19,12 +17,16 @@ const DrawerContent = (props) => {
         setFilteredItems([]);
     };
 
+    const { signOut } = React.useContext(AuthContext);
+
     const onItemParentPress = (key) => {
-        const filteredMainDrawer = props.drawerItems.find((e) => {
+        const filteredMainDrawer = DRAWER_ITEMS.find((e) => {
             return e.key === key;
         });
 
-        if (filteredMainDrawer.hasOwnProperty('routes')) {
+        if (filteredMainDrawer.key === "sign_out") {
+            signOut();
+        } else if (filteredMainDrawer.hasOwnProperty('routes')) {
             setMainDrawer(false);
             setFilteredItems(filteredMainDrawer);
         } else {
@@ -35,47 +37,15 @@ const DrawerContent = (props) => {
 
     function renderUserInfo() {
         return (
-            <View style={styles.userInfoSection}>
-                <View style={styles.containerUserInfoSection}>
-                    <Avatar
-                        rounded
-                        source={{
-                            uri:
-                                'https://i.pinimg.com/474x/bc/d4/ac/bcd4ac32cc7d3f98b5e54bde37d6b09e.jpg',
-                        }}
-                        size={50}
-                    />
-                    <View style={styles.userInfoTextSection}>
-                        <Text h4>SLiMS</Text>
-                        <Text h5>Administrator</Text>
-                    </View>
-                </View>
-            </View>
-        );
-    }
-
-    function renderBackButton() {
-        return (
-            <View>
-                <Divider style={{ height: 1, backgroundColor: '#e1e8ee' }} />
-                <TouchableOpacity
-                    onPress={() => toggleMainDrawer()}
-                >
-                    <View style={styles.backButtonSection}>
-                        <Icon
-                            name="angle-left"
-                            size={25}
-                            style={styles.customDrawerIcon}
-                        />
-                        <Text style={{ color: '#666666' }}>Back</Text>
-                    </View>
-                </TouchableOpacity>
+            <View style={styles.container_drawer_header}>
+                <Text style={styles.text_slims}>SLiMS</Text>
+                <Text style={styles.text_username}>Administrator</Text>
             </View>
         );
     }
 
     function renderMainDrawer() {
-        return props.drawerItems.map((parent) => (
+        return DRAWER_ITEMS.map((parent) => (
             <OuterDrawerItem
                 key={parent.key}
                 label={parent.title}
@@ -95,54 +65,82 @@ const DrawerContent = (props) => {
                 label={route.title}
                 icon={route.icon}
                 onPress={() => {
-                    console.log(route.routeName)
+                    props.navigation.toggleDrawer();
+                    props.navigation.navigate(route.routeName);
                 }}
             />
         ));
     }
 
+    function renderBackButton() {
+        return (
+            <TouchableOpacity
+                onPress={() => toggleMainDrawer()}
+            >
+                <View style={styles.backButtonSection}>
+                    <Icon
+                        name="chevron-left"
+                        size={SIZES.h2}
+                        style={styles.customDrawerIcon}
+                    />
+                    <Text style={styles.text_back}>Back</Text>
+                </View>
+            </TouchableOpacity>
+        );
+    }
+
     return (
-        <ScrollView>
-            <View style={styles.drawerContent}>
-                {renderUserInfo()}
-                {mainDrawer ? null : renderBackButton()}
-            </View>
-            <Divider style={{ height: 1, backgroundColor: '#e1e8ee' }} />
-            <View style={styles.drawerSection}>
+        <View style={styles.container}>
+            {renderUserInfo()}
+            {mainDrawer ? null : renderBackButton()}
+            <ScrollView style={styles.drawer_content}>
                 {mainDrawer ? renderMainDrawer() : renderFilteredItemsDrawer()}
-            </View>
-        </ScrollView>
-    );
+            </ScrollView>
+        </View>
+    )
 }
 
-export default DrawerContent;
+export default DrawerContent
+
+const windowWidth = Dimensions.get('window').width;
+const windowHeight = Dimensions.get('window').height;
 
 const styles = StyleSheet.create({
-    drawerContent: {
+    container: {
         flex: 1
     },
-    userInfoSection: {
-        paddingLeft: 20
+    container_drawer_header: {
+        backgroundColor: COLORS.primary,
+        height: windowHeight * 0.16,
+        justifyContent: 'center',
+        paddingHorizontal: 15
     },
-    containerUserInfoSection: {
-        flexDirection: 'row',
-        marginVertical: 15
+    text_slims: {
+        ...FONTS.h3,
+        color: COLORS.white
     },
-    userInfoTextSection: {
-        flexDirection: 'column',
-        marginLeft: 15
+    text_username: {
+        ...FONTS.body4,
+        color: COLORS.white
     },
-    drawerSection: {
-        marginTop: 15,
+    drawer_content: {
+        flex: 1
     },
     customDrawerIcon: {
         paddingRight: 10,
-        color: '#666666'
+        color: COLORS.black
     },
     backButtonSection: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginVertical: 10,
-        paddingLeft: 20
+        paddingVertical: 10,
+        paddingLeft: 20,
+        borderBottomColor: COLORS.lightGray2,
+        borderBottomWidth: 2,
+
     },
-});
+    text_back: {
+        ...FONTS.body4,
+        color: COLORS.black
+    }
+})

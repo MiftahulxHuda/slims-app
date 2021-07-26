@@ -1,7 +1,7 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Text } from 'react-native-elements';
-import Icon from 'react-native-vector-icons/FontAwesome5';
+import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
+import { COLORS, FONTS, SIZES } from '../constants/theme';
 
 const OuterDrawerItem = ({ label, icon, routes, onPress }) => (
     <TouchableOpacity
@@ -11,12 +11,12 @@ const OuterDrawerItem = ({ label, icon, routes, onPress }) => (
             <View style={styles.backButtonChildrenSection}>
                 <Icon
                     name={icon}
-                    size={25}
+                    size={SIZES.h2}
                     style={styles.customDrawerLeftIcon}
                 />
-                <Text style={{ color: '#666666' }}>{label}</Text>
+                <Text style={styles.text_drawer_item}>{label}</Text>
             </View>
-            {routes ? <Icon name="chevron-right" size={25} style={styles.customDrawerRightIcon} /> : null}
+            {routes ? <Icon name="chevron-right" size={SIZES.h2} style={styles.customDrawerRightIcon} /> : null}
         </View>
     </TouchableOpacity>
 );
@@ -26,11 +26,11 @@ export default OuterDrawerItem;
 const styles = StyleSheet.create({
     customDrawerLeftIcon: {
         paddingRight: 10,
-        color: '#666666'
+        color: COLORS.black
     },
     customDrawerRightIcon: {
         paddingRight: 20,
-        color: '#666666'
+        color: COLORS.black
     },
     backButtonSection: {
         flexDirection: 'row',
@@ -42,5 +42,9 @@ const styles = StyleSheet.create({
         flexGrow: 1, 
         flexDirection: 'row', 
         alignItems: 'center'
+    },
+    text_drawer_item : {
+        ...FONTS.body4,
+        color: COLORS.black
     }
 });
