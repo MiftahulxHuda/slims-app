@@ -96,12 +96,6 @@ export const DRAWER_ITEMS = [
                 routeName: 'DocLanguage'
             },
             {
-                key: 'label',
-                title: 'Label',
-                icon: 'log-out',
-                routeName: 'Label'
-            },
-            {
                 key: 'frequency',
                 title: 'Frequency',
                 icon: 'log-out',

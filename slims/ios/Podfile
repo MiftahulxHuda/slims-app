@@ -14,6 +14,8 @@ target 'slims' do
 
   pod 'RNCCheckbox', :path => '../node_modules/@react-native-community/checkbox'
 
+
+
   target 'slimsTests' do
     inherit! :complete
     # Pods for testing

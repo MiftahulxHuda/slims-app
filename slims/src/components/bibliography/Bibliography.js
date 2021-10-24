@@ -1,148 +1,231 @@
-import React, { useState } from 'react'
-import { StyleSheet, View, StatusBar, Dimensions, FlatList } from 'react-native'
-import BottomSheet from 'reanimated-bottom-sheet';
+import React, { Component } from 'react'
+import { StyleSheet, View, StatusBar, Dimensions, FlatList, Modal, ActivityIndicator } from 'react-native'
 
 import { COLORS } from '../../constants'
-import BibliographyItem from './BibliographyItem';
 import Header from '../commons/Header';
-import FilterBibliography from './FilterBibliography';
-import HeaderFilter from '../commons/HeaderFilter';
-
-const DATA = [
-    {
-        id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
-        title: 'First Item',
-        author: 'Author',
-        isbn_issn: 'ISBN/ISSN',
-        copies: 1
-    },
-    {
-        id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
-        title: 'Second Item',
-        author: 'Author',
-        isbn_issn: 'ISBN/ISSN',
-        copies: 1
-    },
-    {
-        id: '58694a0f-3da1-471f-bd96-145571e29d72',
-        title: 'Third Item',
-        author: 'Author',
-        isbn_issn: 'ISBN/ISSN',
-        copies: 1
-    },
-    {
-        id: '4',
-        title: 'Four Item',
-        author: 'Author',
-        isbn_issn: 'ISBN/ISSN',
-        copies: 1
-    },
-    {
-        id: '5',
-        title: 'Five Item',
-        author: 'Author',
-        isbn_issn: 'ISBN/ISSN',
-        copies: 1
-    },
-    {
-        id: '6',
-        title: 'Six Item',
-        author: 'Author',
-        isbn_issn: 'ISBN/ISSN',
-        copies: 1
-    },
-];
+import BibliographyItem from './BibliographyItem';
+import ModalDelete from '../commons/ModalDelete';
+import CRUDService from '../../service/CRUDService.service';
+import EmptyList from '../commons/EmptyList';
+import Message from '../commons/Message';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 const statusBarHeight = StatusBar.currentHeight;
 const bottomSheetHeight = windowHeight - statusBarHeight;
 
-const Bibliography = ({ navigation }) => {
-    const [blur, setBlur] = useState(0);
+export default class Bibliography extends Component {
+    constructor(props) {
+        super(props)
 
-    const renderItem = ({ item }) => (
-        <BibliographyItem
-            title={item.title}
-            author={item.author}
-            isbn_issn={item.isbn_issn}
-            copies={item.copies}
-            onPress={() => { navigation.push('DetailBibliography') }}
-        />
-    );
+        this.state = {
+            flatListReady: false,
+            data: [],
+            isLoading: false,
+            currentPage: 0,
+            scroll: true,
+            deleteId: 0,
+            refreshing: false
+        }
 
-    const sheetRef = React.useRef(null);
+        this.take = 10;
+        this.sheetRef = React.createRef();
 
-    const renderHeader = () => (
-        <HeaderFilter
-            title="Filter Bibliography"
-            onClose={() => sheetRef.current.snapTo(2)}
-        />
-    )
+        this.scrolled = this.scrolled.bind(this);
+        this.loadMore = this.loadMore.bind(this);
+        this.handleRefresh = this.handleRefresh.bind(this);
+        this.renderItem = this.renderItem.bind(this);
+        this.renderFooter = this.renderFooter.bind(this);
+    }
 
-    const renderContent = () => (
-        <View
-            style={{
-                height: bottomSheetHeight,
-            }}
-        >
-            <FilterBibliography />
-        </View>
-    );
+    componentDidMount(prevProps, prevState, snapshot) {
+        this._unsubscribe = this.props.navigation.addListener('focus', () => {
+            this.setState({
+                flatListReady: false,
+                isLoading: true,
+                scroll: true,
+                data: [],
+                currentPage: 0,
+            }, () => this.getData())
+        });
+    }
 
-    return (
-        <>
-            <View style={[styles.blur, {zIndex: blur}]}></View>
-            <View style={styles.container}>
-                <Header title="Bibliography"
-                    onBack={() => {
-                        navigation.toggleDrawer()
-                    }}
-                    onPressFilter={() => {
-                        setBlur(1);
-                        sheetRef.current.snapTo(1);
-                    }}
-                    onAdd={() => {
-                        navigation.push("FormBibliography")
-                    }}
-                />
-                <FlatList
-                    data={DATA}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.list_book}
-                    showsVerticalScrollIndicator={false}
-                />
-            </View >
-            <BottomSheet
-                ref={sheetRef}
-                snapPoints={[windowHeight - statusBarHeight, windowHeight * 0.8, 0]}
-                initialSnap={2}
-                renderHeader={renderHeader}
-                renderContent={renderContent}
-                onCloseEnd={() => {
-                    setBlur(0)
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (this.state.flatListReady && prevState.currentPage != this.state.currentPage) {
+            this.setState({ isLoading: true });
+            this.getData();
+        }
+    }
+
+    componentWillUnmount() {
+        this._unsubscribe();
+    }
+
+    filterCount() {
+        let count = 0;
+
+        for (const key in this.props.filter) {
+            if (this.props.filter[key].toString().trim().length > 0) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    async getData() {
+        const list = await CRUDService.findAll("/biblio", {
+            take: this.take,
+            skip: this.state.currentPage,
+            sort: "title,biblio_id",
+            ...this.props.filter
+        })
+
+        if (list) {
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    data: previousState.data.concat(list.data)
+                }
+            })
+
+            if (this.state.data.length >= list.count) {
+                this.setState({ scroll: false })
+            }
+
+            this.setState({ isLoading: false })
+        }
+    }
+
+    renderItem({ item }) {
+        return (
+            <BibliographyItem
+                image={item.image}
+                title={item.title}
+                author={item.author}
+                publish_place={item.publish_place}
+                publish_year={item.publish_year}
+                isbn_issn={item.isbn_issn}
+                publisher={item.publisher}
+                items={item.items}
+                onEdit={() => {
+                    this.props.navigation.push("FormBibliography", { action: "edit", id: item.biblio_id })
+                }}
+                onDelete={() => {
+                    this.setState({ deleteId: item.biblio_id })
+                    this.props.setModalVisible()
                 }}
             />
-        </>
-    )
+        )
+    };
+
+    scrolled() {
+        this.setState({ flatListReady: true })
+    }
+
+    loadMore() {
+        if (!this.state.flatListReady) return null
+
+        if (this.state.scroll == true && this.state.isLoading == false) {
+            this.setState({ currentPage: this.state.data.length });
+        }
+    }
+
+    renderFooter() {
+        if (!this.state.isLoading) return null;
+
+        return (
+            <View style={styles.loader}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+            </View>
+        )
+    }
+
+    handleRefresh() {
+        this.setState({
+            flatListReady: false,
+            isLoading: true,
+            scroll: true,
+            data: [],
+            currentPage: 0,
+            refreshing: true
+        }, () => {
+            this.setState({ refreshing: false })
+            this.getData()
+        })
+    }
+
+    render() {
+        return (
+            <>
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={this.state.deleteId > 0}
+                    onRequestClose={() => {
+                        this.setState({ deleteId: 0 });
+                        this.props.setModalVisible()
+                    }}
+                >
+                    <ModalDelete
+                        onCancel={() => {
+                            this.setState({ deleteId: 0 });
+                            this.props.setModalVisible()
+                        }}
+                        onSubmit={async () => {
+                            const deleted = await CRUDService.deleteOneById("/biblio", this.state.deleteId);
+                            if (deleted) {
+                                const filtered = await this.state.data.filter(filter => filter.biblio_id != this.state.deleteId);
+                                this.setState({ data: filtered, deleteId: 0 });
+                                this.props.setModalVisible()
+                                Message.showToast('Data Deleted')
+                            }
+                        }}
+                    />
+                </Modal>
+                <View style={styles.container}>
+                    <Header title="Bibliography"
+                        onBack={() => this.props.navigation.toggleDrawer()}
+                        onPressFilter={() => {
+                            this.props.navigation.push("FilterBibliography")
+                        }}
+                        onAdd={() => this.props.navigation.push("FormBibliography", { action: "add" })}
+                        styleTextTitle={{ flex: 5 }}
+                        filterCount={this.filterCount()}
+                    />
+
+                    <FlatList
+                        onScroll={this.scrolled}
+                        data={this.state.data}
+                        renderItem={this.renderItem}
+                        keyExtractor={item => item.biblio_id}
+                        initialNumToRender={5}
+                        contentContainerStyle={styles.list}
+                        showsVerticalScrollIndicator={false}
+                        ListFooterComponent={this.renderFooter}
+                        onEndReached={this.loadMore}
+                        onEndReachedThreshold={0.3}
+                        ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+                        ListEmptyComponent={<EmptyList />}
+                        refreshing={this.state.refreshing}
+                        onRefresh={this.handleRefresh}
+                    />
+                </View >
+            </>
+        )
+    }
 }
 
-export default Bibliography
-
 const styles = StyleSheet.create({
-    blur: {
-        position: 'absolute',
-        backgroundColor: COLORS.black,
-        width: '100%',
-        height: '100%',
-        opacity: 0.8,
-    },
     container: {
         flex: 1,
         backgroundColor: COLORS.white
     },
-    list_book: {
-        paddingTop: 50
+    list: {
+        paddingTop: 50,
     },
+    loader: {
+        marginTop: 10,
+        alignItems: 'center'
+    }
 })

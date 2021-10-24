@@ -1,100 +1,175 @@
-import React, { useState } from 'react'
+import React, { PureComponent } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
 import DropDownPicker from 'react-native-dropdown-picker';
 import { COLORS, FONTS } from '../../constants';
 
-const CustomDropdown = ({
-    containerStyle,
-    label,
-    itemsContainer,
-    searchable = false,
-    value,
-    onChange,
-    error,
-    touched,
-    zIndex,
-    zIndexInverse,
-    backgroundColor = COLORS.lightGray2
-}) => {
-    const [open, setOpen] = useState(false);
-    const [items, setItems] = useState(itemsContainer);
-    const [loading, setLoading] = useState(false);
+export default class CustomDropdown extends PureComponent {
+    constructor(props) {
+        super(props)
 
-    return (
-        <View style={containerStyle}>
-            <Text style={styles.label}>{label}</Text>
-            <DropDownPicker
-                open={open}
-                value={value}
-                items={items}
-                setOpen={setOpen}
-                setValue={onChange}
-                setItems={setItems}
-                containerStyle={{ height: 40 }}
-                placeholder={"Select " + label}
-                style={{
-                    backgroundColor: backgroundColor,
-                    color: COLORS.lightGreen,
-                    borderRadius: 8,
-                    borderWidth: 0
-                }}
-                textStyle={{
-                    ...FONTS.body3,
-                    color: COLORS.lightGray4
-                }}
-                listMode="SCROLLVIEW"
-                zIndex={zIndex}
-                zIndexInverse={zIndexInverse}
-                searchable={searchable}
-                searchPlaceholder="Search"
-                loading={loading}
-                disableLocalSearch={true}
-                onChangeSearchText={(text) => {
-                    // console.log("text", text)
+        // console.log(this.props.itemsContainer)
+        // console.log(this.props.value == null)
 
-                    // Show the loading animation
-                    setLoading(true);
+        this.state = {
+            open: false,
+            items: this.props.itemsContainer,
+            value: this.props.value,
+            loading: false,
+        }
 
-                    setTimeout(() => {
-                        setLoading(false);
-                    }, 3000);
+        this.setOpen = this.setOpen.bind(this);
+        this.setValue = this.setValue.bind(this);
+        this.setItems = this.setItems.bind(this);
+    }
 
-                    // Get items from API
-                    // API.get("/items/search", {
-                    //     text
-                    // })
-                    //     .then((items) => {
-                    //         setItems(items);
-                    //     })
-                    //     .catch((err) => {
-                    //         //
-                    //     })
-                    //     .finally(() => {
-                    //         // Hide the loading animation
-                    //         setLoading(false);
-                    //     });
-                }}
+    componentDidMount() {
+    }
 
-            />
-            {error && touched ?
-                <Text style={{
-                    color: COLORS.lightRed,
-                    ...FONTS.body4,
-                    marginTop: 10
-                }}>{error}</Text>
-                : null
+    setLoading() {
+        this.setState((previousState) => {
+            return {
+                loading: !previousState.loading
             }
-        </View>
-    );
+        });
+    }
+
+    setItemsFromPC(items) {
+        this.setState({
+            items: items
+        });
+    }
+
+    setValueFromPC(value) {
+        this.setState({
+            value: value
+        });
+    }
+
+    setOpen(open) {
+        if (this.props.onOpen) {
+            if (open) {
+                this.setLoading()
+                this.props.onOpen()
+            }
+        }
+
+        this.setState({
+            open
+        });
+    }
+
+    setValue(callback) {
+        this.setState(state => {
+            return {
+                value: callback(state.value)
+            }
+        }, () => {
+            this.props.onChange(this.state.value)
+        });
+    }
+
+    setItems(callback) {
+        this.setState(state => ({
+            items: callback(state.items)
+        }));
+    }
+
+    getLabel() {
+        if (!this.props.label) {
+            return null;
+        }
+
+        return (
+            <Text style={styles.label}>{this.props.label + (this.props.required ? ' *' : '')}</Text>
+        )
+    }
+
+    render() {
+        return (
+            <View style={this.props.containerStyle}>
+                {this.getLabel()}
+                <DropDownPicker
+                    open={this.state.open}
+                    value={this.state.value}
+                    items={this.state.items}
+                    setOpen={this.setOpen}
+                    setValue={this.setValue}
+                    setItems={this.setItems}
+                    containerStyle={{ height: 40 }}
+                    placeholder={"Select " + (this.props.placeholder ? this.props.placeholder : this.props.label)}
+                    style={{
+                        backgroundColor: this.props.backgroundColor,
+                        borderRadius: 8,
+                        borderWidth: 0
+                    }}
+                    textStyle={{
+                        ...FONTS.body3,
+                        color: COLORS.gray1
+                    }}
+                    listMode="MODAL"
+                    // zIndex={this.props.zIndex}
+                    // zIndexInverse={this.props.zIndexInverse}
+                    searchable={this.props.searchable}
+                    searchPlaceholder="Search"
+                    loading={this.state.loading}
+                    disableLocalSearch={this.props.disableLocalSearch}
+                    onChangeSearchText={(text) => {
+                        // Show the loading animation
+                        if (this.props.disableLocalSearch) {
+                            this.setLoading()
+                            this.props.onChangeSearchText(text);
+                        }
+
+
+                        //     setTimeout(() => {
+                        //         setLoading(false);
+                        //     }, 3000);
+
+                        //     // Get items from API
+                        //     // API.get("/items/search", {
+                        //     //     text
+                        //     // })
+                        //     //     .then((items) => {
+                        //     //         setItems(items);
+                        //     //     })
+                        //     //     .catch((err) => {
+                        //     //         //
+                        //     //     })
+                        //     //     .finally(() => {
+                        //     //         // Hide the loading animation
+                        //     //         setLoading(false);
+                        //     //     });
+                    }}
+                    searchContainerStyle={{
+                        borderBottomColor: COLORS.gray3
+                    }}
+                    searchTextInputStyle={{
+                        color: COLORS.gray3
+                    }}
+                />
+                {this.props.error && this.props.touched ?
+                    <Text style={{
+                        color: COLORS.lightRed,
+                        ...FONTS.body4,
+                        marginTop: 10
+                    }}>{this.props.error}</Text>
+                    : null
+                }
+            </View>
+        )
+    }
 }
 
-export default CustomDropdown;
+CustomDropdown.defaultProps = {
+    backgroundColor: COLORS.lightGray2,
+    disableLocalSearch: false
+};
 
 const styles = StyleSheet.create({
     label: {
         ...FONTS.body3,
-        color: COLORS.lightGray,
+        color: COLORS.gray3,
         marginBottom: 10
     },
 });

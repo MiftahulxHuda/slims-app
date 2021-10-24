@@ -1,138 +1,216 @@
-import React, { useState } from 'react'
-import { StyleSheet, View, ScrollView, Text } from 'react-native'
-import Icon from 'react-native-vector-icons/Feather';
-import { Formik } from 'formik'
+import React, { PureComponent } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { withFormik } from 'formik'
 import * as yup from 'yup';
-import CheckBox from '@react-native-community/checkbox';
+import { connect } from 'react-redux';
+import { bindActionCreators } from '@reduxjs/toolkit';
 
-import { COLORS, FONTS, SIZES } from '../../constants'
-import DetailHeader from '../commons/DetailHeader'
+import { COLORS, FONTS } from '../../constants'
 import CustomTextInput from '../commons/CustomTextInput';
 import CustomButton from '../commons/CustomButton';
+import { setIsLoading } from '../../store/slice/loadingSlice';
+import CRUDService from '../../service/CRUDService.service';
+import Message from '../commons/Message';
 import CustomCheckbox from '../commons/CustomCheckbox';
 
-let schema = yup.object().shape({
-    code: yup.string().required("Code is required"),
-    name: yup.string().required("Name is required"),
-});
-
-const FormItemStatus = ({ route, navigation }) => {
-    const { action } = route.params;
-
-    let actionTitle = "";
-    if (action == "add") {
-        actionTitle = "Add";
-    } else {
-        actionTitle = "Edit";
+class MyForm extends PureComponent {
+    constructor(props) {
+        super(props)
     }
 
-    return (
-        <View style={styles.container}>
-            <DetailHeader
-                title={actionTitle + " Item Status"}
-                iconPosition="left"
-                icon={
-                    <Icon
-                        name="chevron-left"
-                        size={SIZES.h1}
-                        color={COLORS.primary}
-                        onPress={() => {
-                            navigation.popToTop();
-                        }}
+    async findOneById(id) {
+        const findOneById = await CRUDService.findOneById(`${"/mst-item-status"}/${id}`);
+        if (findOneById) {
+            this.props.setValues({
+                item_status_id: findOneById.item_status_id,
+                item_status_name: findOneById.item_status_name,
+                no_loan: findOneById.no_loan ? true : false,
+                skip_stock_take: findOneById.skip_stock_take ? true : false,
+            })
+        }
+    }
+
+    componentDidMount() {
+        if (this.props.route.params.action == "edit") {
+            this.findOneById(this.props.route.params.id)
+        }
+    }
+
+    getSnapshotBeforeUpdate(prevProps, prevState) {
+        if (this.props.isReset == true) {
+            return this.props.isReset;
+        }
+
+        return null;
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (snapshot != null) {
+            this.props.resetForm({ values: '' });
+            this.props.resetFilter();
+        }
+    }
+
+    render() {
+        const {
+            values,
+            touched,
+            errors,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            setFieldValue
+        } = this.props;
+
+        return (
+            <>
+                <View style={styles.content}>
+                    <CustomTextInput
+                        label="Code"
+                        required={true}
+                        onChangeText={handleChange('item_status_id')}
+                        onBlur={handleBlur('item_status_id')}
+                        value={values.item_status_id}
+                        touched={touched.item_status_id}
+                        error={errors.item_status_id}
                     />
-                }
-            />
-            <ScrollView
-                contentContainerStyle={styles.formContentContainer}
-            >
-                <Formik
-                    initialValues={{ code: '', name: '', noLoan: false, skipped: false }}
-                    validationSchema={schema}
-                    onSubmit={values => { console.log(values) }}
-                >
-                    {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, touched, errors, isValid }) => (
-                        <>
-                            <CustomTextInput
-                                label="Code"
-                                required={true}
-                                onChangeText={handleChange('code')}
-                                onBlur={handleBlur('code')}
-                                value={values.code}
-                                touched={touched.code}
-                                error={errors.code}
-                            />
 
-                            <CustomTextInput
-                                label="Name"
-                                required={true}
-                                onChangeText={handleChange('name')}
-                                onBlur={handleBlur('name')}
-                                value={values.name}
-                                touched={touched.name}
-                                error={errors.name}
-                                containerStyle={{ marginTop: 10 }}
-                            />
+                    <CustomTextInput
+                        label="Item Status"
+                        required={true}
+                        onChangeText={handleChange('item_status_name')}
+                        onBlur={handleBlur('item_status_name')}
+                        value={values.item_status_name}
+                        touched={touched.item_status_name}
+                        error={errors.item_status_name}
+                        containerStyle={{ marginTop: 12 }}
+                    />
 
-                            <View style={styles.rules}>
-                                <Text style={styles.text_rules}>Rules</Text>
+                    <View style={styles.rules}>
+                        <Text style={styles.text_rules}>Rules</Text>
 
-                                <CustomCheckbox
-                                    label="No Loan"
-                                    value={values.noLoan}
-                                    onValueChange={(state) => {
-                                        let newState = state;
+                        <CustomCheckbox
+                            label="No Loan Transaction"
+                            value={values.no_loan}
+                            onValueChange={(state) => {
+                                let newState = state;
 
-                                        if (typeof state === "function") {
-                                            newState = state(values.noLoan);
-                                        }
+                                if (typeof state === "function") {
+                                    newState = state(values.no_loan);
+                                }
 
-                                        setFieldValue('noLoan', newState);
-                                    }}
-                                />
+                                setFieldValue('no_loan', newState);
+                            }}
+                        />
 
-                                <CustomCheckbox
-                                    label="Skipped"
-                                    value={values.skipped}
-                                    onValueChange={(state) => {
-                                        let newState = state;
+                        <CustomCheckbox
+                            label="Skipped By Stock Take"
+                            value={values.skip_stock_take}
+                            onValueChange={(state) => {
+                                let newState = state;
 
-                                        if (typeof state === "function") {
-                                            newState = state(values.skipped);
-                                        }
+                                if (typeof state === "function") {
+                                    newState = state(values.skip_stock_take);
+                                }
 
-                                        setFieldValue('skipped', newState);
-                                    }}
-                                />
-                            </View>
+                                setFieldValue('skip_stock_take', newState);
+                            }}
+                        />
+                    </View>
 
-                            <CustomButton
-                                containerStyle={styles.container_submit}
-                                buttonStyle={styles.submit}
-                                titleStyle={styles.text_submit}
-                                title="Submit"
-                                onPress={handleSubmit}
-                            />
-                        </>
-                    )}
-                </Formik>
-            </ScrollView>
-        </View>
-    )
+                    <CustomButton
+                        containerStyle={styles.container_submit}
+                        buttonStyle={styles.submit}
+                        titleStyle={styles.text_submit}
+                        title="Submit"
+                        onPress={handleSubmit}
+                    />
+                </View>
+            </>
+        )
+    }
 }
 
-export default FormItemStatus
+const schema = yup.object().shape({
+    item_status_id: yup.string().required("Code is required").max(3, 'Code must be at most 3 characters'),
+    item_status_name: yup.string().required("Item Status is required"),
+});
+
+const create = async (post) => {
+    const created = await CRUDService.create("/mst-item-status", post);
+    return created;
+}
+
+const updateOneById = async (id, post) => {
+    const updated = await CRUDService.updateOneById("/mst-item-status", id, post);
+    return updated;
+}
+
+const formikEnhancer = withFormik({
+    mapPropsToValues: (props) => {
+        return ({ item_status_id: "", item_status_name: "", no_loan: false, skip_stock_take: false })
+    },
+    validationSchema: schema,
+    // enableReinitialize: true,
+    // Custom sync validation
+    // validate: values => {
+    //     const errors = {};
+
+    //     if (!values.name) {
+    //         errors.name = 'Required';
+    //     }
+
+    //     return errors;
+    // },
+
+    handleSubmit: async (values, { props }) => {
+        let post = {...values};
+        post['no_loan'] = post['no_loan'] ? 1 : 0;
+        post['skip_stock_take'] = post['skip_stock_take'] ? 1 : 0;
+        
+        props.setIsLoading();
+
+        let req;
+        let messageToast;
+        if (props.route.params.action == "add") {
+            req = await create(values)
+            messageToast = "Data added";
+        } else {
+            req = await updateOneById(props.route.params.id, post);
+            messageToast = "Data updated";
+        }
+
+        if (req) {
+            props.setIsLoading();
+            Message.showToast(messageToast)
+            props.navigation.goBack();
+        } else {
+            props.setIsLoading();
+        }
+    },
+
+    // displayName: 'BasicForm',
+})(MyForm);
+
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators(
+        {
+            setIsLoading
+        },
+        dispatch
+    );
+}
+
+export default connect(null, mapDispatchToProps)(formikEnhancer)
 
 const styles = StyleSheet.create({
-    container: {
+    content: {
         flex: 1,
-        backgroundColor: COLORS.white
-    },
-    formContentContainer: {
-        flexGrow: 1,
-        padding: 20
+        backgroundColor: COLORS.white,
+        padding: 16
     },
     container_submit: {
-        marginTop: 20
+        marginTop: 24
     },
     submit: {
         height: 50,
@@ -147,10 +225,10 @@ const styles = StyleSheet.create({
         color: COLORS.white
     },
     rules: {
-        marginTop: 10
+        marginTop: 12
     },
     text_rules: {
         ...FONTS.body3,
-        color: COLORS.lightGray
+        color: COLORS.gray3
     }
 })

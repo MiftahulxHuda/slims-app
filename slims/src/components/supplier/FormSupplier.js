@@ -1,152 +1,201 @@
-import React from 'react'
-import { StyleSheet, View, ScrollView } from 'react-native'
-import Icon from 'react-native-vector-icons/Feather';
-import { Formik } from 'formik'
+import React, { PureComponent } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { withFormik } from 'formik'
 import * as yup from 'yup';
+import { connect } from 'react-redux';
+import { bindActionCreators } from '@reduxjs/toolkit';
 
-import { COLORS, FONTS, SIZES } from '../../constants'
-import DetailHeader from '../commons/DetailHeader'
+import { COLORS, FONTS } from '../../constants'
 import CustomTextInput from '../commons/CustomTextInput';
 import CustomButton from '../commons/CustomButton';
+import { setIsLoading } from '../../store/slice/loadingSlice';
+import CRUDService from '../../service/CRUDService.service';
+import Message from '../commons/Message';
 
-let schema = yup.object().shape({
-    name: yup.string().required("Name is required"),
-});
-
-const FormSupplier = ({ route, navigation }) => {
-    const { action } = route.params;
-
-    let actionTitle = "";
-    if (action == "add") {
-        actionTitle = "Add";
-    } else {
-        actionTitle = "Edit";
+class MyForm extends PureComponent {
+    constructor(props) {
+        super(props)
     }
 
-    return (
-        <View style={styles.container}>
-            <DetailHeader
-                title={actionTitle + " Supplier"}
-                iconPosition="left"
-                icon={
-                    <Icon
-                        name="chevron-left"
-                        size={SIZES.h1}
-                        color={COLORS.primary}
-                        onPress={() => {
-                            navigation.popToTop();
-                        }}
+    async findOneById(id) {
+        const findOneById = await CRUDService.findOneById(`${"/mst-supplier"}/${id}`);
+        if (findOneById) {
+            this.props.setValues({
+                supplier_name: findOneById.supplier_name,
+                contact: findOneById.contact,
+                phone: findOneById.phone,
+                fax: findOneById.fax,
+            })
+        }
+    }
+
+    componentDidMount() {
+        if (this.props.route.params.action == "edit") {
+            this.findOneById(this.props.route.params.id)
+        }
+    }
+
+    getSnapshotBeforeUpdate(prevProps, prevState) {
+        if (this.props.isReset == true) {
+            return this.props.isReset;
+        }
+
+        return null;
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (snapshot != null) {
+            this.props.resetForm({ values: '' });
+            this.props.resetFilter();
+        }
+    }
+
+    render() {
+        const {
+            values,
+            touched,
+            errors,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+        } = this.props;
+
+        return (
+            <>
+                <View style={styles.content}>
+                    <CustomTextInput
+                        label="Supplier"
+                        required={true}
+                        onChangeText={handleChange('supplier_name')}
+                        onBlur={handleBlur('supplier_name')}
+                        value={values.supplier_name}
+                        touched={touched.supplier_name}
+                        error={errors.supplier_name}
                     />
-                }
-            />
-            <ScrollView
-                contentContainerStyle={styles.formContentContainer}
-            >
-                <Formik
-                    initialValues={{
-                        name: '',
-                        address: '',
-                        contact: '',
-                        phone_number: '',
-                        fax_number: '',
-                        account_number: '',
-                    }}
-                    validationSchema={schema}
-                    onSubmit={values => { console.log(values) }}
-                >
-                    {({ handleChange, handleBlur, handleSubmit, values, touched, errors, isValid }) => (
-                        <>
-                            <CustomTextInput
-                                label="Name"
-                                required={true}
-                                onChangeText={handleChange('name')}
-                                onBlur={handleBlur('name')}
-                                value={values.name}
-                                touched={touched.name}
-                                error={errors.name}
-                                containerStyle={{ marginTop: 10 }}
-                            />
 
-                            <CustomTextInput
-                                label="Address"
-                                multiline={true}
-                                numberOfLines={3}
-                                onChangeText={handleChange('address')}
-                                onBlur={handleBlur('address')}
-                                value={values.address}
-                                touched={touched.address}
-                                error={errors.address}
-                                containerStyle={{ marginTop: 10 }}
-                            />
+                    <CustomTextInput
+                        label="Contact"
+                        onChangeText={handleChange('contact')}
+                        onBlur={handleBlur('contact')}
+                        value={values.contact}
+                        touched={touched.contact}
+                        error={errors.contact}
+                        containerStyle={{ marginTop: 12 }}
+                    />
 
-                            <CustomTextInput
-                                label="Contact"
-                                onChangeText={handleChange('contact')}
-                                onBlur={handleBlur('contact')}
-                                value={values.contact}
-                                touched={touched.contact}
-                                error={errors.contact}
-                                containerStyle={{ marginTop: 10 }}
-                            />
+                    <CustomTextInput
+                        label="Phone"
+                        onChangeText={handleChange('phone')}
+                        onBlur={handleBlur('phone')}
+                        value={values.phone}
+                        touched={touched.phone}
+                        error={errors.phone}
+                        containerStyle={{ marginTop: 12 }}
+                    />
 
-                            <CustomTextInput
-                                label="Phone Number"
-                                onChangeText={handleChange('phone_number')}
-                                onBlur={handleBlur('phone_number')}
-                                value={values.phone_number}
-                                touched={touched.phone_number}
-                                error={errors.phone_number}
-                                containerStyle={{ marginTop: 10 }}
-                            />
+                    <CustomTextInput
+                        label="Fax"
+                        onChangeText={handleChange('fax')}
+                        onBlur={handleBlur('fax')}
+                        value={values.fax}
+                        touched={touched.fax}
+                        error={errors.fax}
+                        containerStyle={{ marginTop: 12 }}
+                    />
 
-                            <CustomTextInput
-                                label="Fax Number"
-                                onChangeText={handleChange('fax_number')}
-                                onBlur={handleBlur('fax_number')}
-                                value={values.fax_number}
-                                touched={touched.fax_number}
-                                error={errors.fax_number}
-                                containerStyle={{ marginTop: 10 }}
-                            />
-
-                            <CustomTextInput
-                                label="Account Number"
-                                onChangeText={handleChange('account_number')}
-                                onBlur={handleBlur('account_number')}
-                                value={values.account_number}
-                                touched={touched.account_number}
-                                error={errors.account_number}
-                                containerStyle={{ marginTop: 10 }}
-                            />
-
-                            <CustomButton
-                                containerStyle={styles.container_submit}
-                                buttonStyle={styles.submit}
-                                titleStyle={styles.text_submit}
-                                title="Submit"
-                                onPress={handleSubmit}
-                            />
-                        </>
-                    )}
-                </Formik>
-            </ScrollView>
-        </View>
-    )
+                    <CustomButton
+                        containerStyle={styles.container_submit}
+                        buttonStyle={styles.submit}
+                        titleStyle={styles.text_submit}
+                        title="Submit"
+                        onPress={handleSubmit}
+                    />
+                </View>
+            </>
+        )
+    }
 }
 
-export default FormSupplier
+const schema = yup.object().shape({
+    supplier_name: yup.string().required("Supplier is required").max(100),
+});
+
+const create = async (post) => {
+    const created = await CRUDService.create("/mst-supplier", post);
+    return created;
+}
+
+const updateOneById = async (id, post) => {
+    const updated = await CRUDService.updateOneById("/mst-supplier", id, post);
+    return updated;
+}
+
+const formikEnhancer = withFormik({
+    mapPropsToValues: (props) => {
+        return ({
+            supplier_name: "",
+            contact: "",
+            phone: "",
+            fax: "",
+        })
+    },
+    validationSchema: schema,
+    // enableReinitialize: true,
+    // Custom sync validation
+    // validate: values => {
+    //     const errors = {};
+
+    //     if (!values.name) {
+    //         errors.name = 'Required';
+    //     }
+
+    //     return errors;
+    // },
+
+    handleSubmit: async (values, { props }) => {
+        props.setIsLoading();
+
+        let req;
+        let messageToast;
+        if (props.route.params.action == "add") {
+            req = await create(values)
+            messageToast = "Data added";
+        } else {
+            req = await updateOneById(props.route.params.id, values);
+            messageToast = "Data updated";
+        }
+
+        if (req) {
+            props.setIsLoading();
+            Message.showToast(messageToast)
+            props.navigation.goBack();
+        } else {
+            props.setIsLoading();
+        }
+    },
+
+    // displayName: 'BasicForm',
+})(MyForm);
+
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators(
+        {
+            setIsLoading
+        },
+        dispatch
+    );
+}
+
+export default connect(null, mapDispatchToProps)(formikEnhancer)
 
 const styles = StyleSheet.create({
-    container: {
+    content: {
         flex: 1,
-        backgroundColor: COLORS.white
-    },
-    formContentContainer: {
-        flexGrow: 1,
-        padding: 20
+        backgroundColor: COLORS.white,
+        padding: 16
     },
     container_submit: {
-        marginTop: 20
+        marginTop: 24
     },
     submit: {
         height: 50,

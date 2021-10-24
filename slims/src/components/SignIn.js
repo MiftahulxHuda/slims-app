@@ -10,8 +10,8 @@ import CustomTextInput from './commons/CustomTextInput';
 import CustomButton from './commons/CustomButton';
 
 let schema = yup.object().shape({
-    // username: yup.string().required("Username is required"),
-    // password: yup.string().required("Password is required"),
+    username: yup.string().required("Username is required"),
+    password: yup.string().required("Password is required"),
 });
 
 // @refresh reset
@@ -31,7 +31,9 @@ const SignIn = () => {
                     <Formik
                         initialValues={{ username: '', password: '' }}
                         validationSchema={schema}
-                        onSubmit={values => signIn()}
+                        onSubmit={(values) => {
+                            signIn(values.username, values.password);
+                        }}
                     >
                         {({ handleChange, handleBlur, handleSubmit, values, touched, errors, isValid }) => (
                             <>
@@ -61,7 +63,7 @@ const SignIn = () => {
                                     value={values.password}
                                     touched={touched.password}
                                     error={errors.password}
-                                    containerStyle={{ marginTop: 10 }}
+                                    containerStyle={{ marginTop: 12 }}
                                 />
 
                                 <CustomButton 
@@ -106,20 +108,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 30
     },
-    label: {
-        ...FONTS.body3,
-        color: COLORS.lightGray,
-        marginBottom: 10
-    },
-    input: {
-        backgroundColor: COLORS.lightGray2,
-        paddingHorizontal: 15,
-        borderRadius: 8,
-        color: COLORS.lightGray,
-        ...FONTS.body3,
-    },
+    // label: {
+    //     ...FONTS.body3,
+    //     color: COLORS.lightGray,
+    //     marginBottom: 10
+    // },
+    // input: {
+    //     backgroundColor: COLORS.lightGray2,
+    //     paddingHorizontal: 15,
+    //     borderRadius: 8,
+    //     color: COLORS.lightGray,
+    //     ...FONTS.body3,
+    // },
     container_sign_in: {
-        marginTop: 20
+        marginTop: 24
     },
     sign_in: {
         height: 50,

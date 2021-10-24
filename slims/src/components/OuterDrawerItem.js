@@ -25,17 +25,17 @@ export default OuterDrawerItem;
 
 const styles = StyleSheet.create({
     customDrawerLeftIcon: {
-        paddingRight: 10,
-        color: COLORS.black
+        paddingRight: 8,
+        color: COLORS.gray3
     },
     customDrawerRightIcon: {
-        paddingRight: 20,
-        color: COLORS.black
+        paddingRight: 16,
+        color: COLORS.gray3
     },
     backButtonSection: {
         flexDirection: 'row',
-        marginVertical: 10,
-        paddingLeft: 20,
+        marginVertical: 8,
+        paddingLeft: 16,
         alignItems: 'center'
     },
     backButtonChildrenSection: {
@@ -45,6 +45,6 @@ const styles = StyleSheet.create({
     },
     text_drawer_item : {
         ...FONTS.body4,
-        color: COLORS.black
+        color: COLORS.gray3
     }
 });

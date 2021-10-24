@@ -7,11 +7,14 @@ const CustomButton = ({
     titleStyle,
     title,
     onPress,
-    icon
+    icon,
+    disabled,
+    badge,
 }) => {
     return (
-        <TouchableOpacity style={containerStyle} onPress={onPress}>
+        <TouchableOpacity style={containerStyle} onPress={onPress} disabled={disabled}>
             <View style={buttonStyle}>
+                {badge}
                 {icon}
                 <Text style={titleStyle}>{title}</Text>
             </View>

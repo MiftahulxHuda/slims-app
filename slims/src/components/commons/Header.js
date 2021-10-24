@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, StatusBar, ImageBackground, Dimensions, 
 import Icon from 'react-native-vector-icons/Feather';
 
 import { COLORS, FONTS, SIZES, images } from '../../constants'
+import Badge from './Badge';
 import CustomButton from './CustomButton';
 
 export default function Header({
@@ -11,6 +12,7 @@ export default function Header({
     title,
     onPressFilter,
     styleTextTitle = { flex: 2 },
+    filterCount,
     ...props
 }) {
     return (
@@ -54,6 +56,12 @@ export default function Header({
                         style={styles.icon_filter}
                     />
                 }
+                badge={
+                    <Badge
+                        badgeCount={filterCount}
+                        containerStyle={{marginRight: 8}}
+                    />
+                }
             />
             {/* <TouchableOpacity onPress={onPressFilter} style={styles.container_button_filter}>
                 <View style={styles.button_filter}>
@@ -77,7 +85,7 @@ const headerHeight = windowHeight * 0.26;
 const styles = StyleSheet.create({
     header: {
         height: headerHeight,
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingTop: statusBarHeight,
         // paddingBottom: headerHeight - 25,
         flexDirection: 'column'
@@ -114,6 +122,6 @@ const styles = StyleSheet.create({
     text_filter: {
         ...FONTS.h3,
         color: COLORS.primary,
-        marginLeft: 10
+        marginLeft: 12
     },
 });

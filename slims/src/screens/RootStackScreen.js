@@ -7,19 +7,21 @@ import DrawerScreen from './DrawerScreen';
 
 const RootStack = createStackNavigator();
 
-const RootStackScreen = ({ userToken }) => (
-    <RootStack.Navigator headerMode='none'>
-        { userToken !== null ?
-            <RootStack.Screen
-                name="DrawerScreen"
-                component={DrawerScreen}
-                options={{
-                    animationEnabled: false
-                }} />
-            :
-            <RootStack.Screen name="SignIn" component={SignIn} />
-        }
-    </RootStack.Navigator>
-);
+const RootStackScreen = ({ userToken }) => {
+    return (
+        <RootStack.Navigator headerMode='none'>
+            {userToken !== null ?
+                <RootStack.Screen
+                    name="DrawerScreen"
+                    component={DrawerScreen}
+                    options={{
+                        animationEnabled: false
+                    }} />
+                :
+                <RootStack.Screen name="SignIn" component={SignIn} />
+            }
+        </RootStack.Navigator>
+    )
+};
 
 export default RootStackScreen;

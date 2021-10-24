@@ -34,7 +34,7 @@ const CustomRadioButton = ({
                                 onPress={onChange}
                                 borderWidth={1}
                                 buttonInnerColor={COLORS.primary}
-                                buttonOuterColor={COLORS.lightGray}
+                                buttonOuterColor={COLORS.gray3}
                                 buttonSize={9}
                                 buttonOuterSize={18}
                                 buttonStyle={{}}
@@ -45,7 +45,7 @@ const CustomRadioButton = ({
                                 index={i}
                                 labelHorizontal={true}
                                 onPress={onChange}
-                                labelStyle={{ ...FONTS.body3, color: COLORS.lightGray }}
+                                labelStyle={{ ...FONTS.body3, color: COLORS.gray3 }}
                                 labelWrapStyle={{}}
                             />
                         </RadioButton>

@@ -1,5 +1,5 @@
 import { DrawerContentScrollView } from '@react-navigation/drawer'
-import React, { useState } from 'react'
+import React, { PureComponent } from 'react'
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions } from 'react-native'
 import Icon from 'react-native-vector-icons/Feather';
 
@@ -8,34 +8,45 @@ import { DRAWER_ITEMS } from '../constants/drawer_items';
 import { AuthContext } from '../contexts/AuthContext';
 import OuterDrawerItem from '../components/OuterDrawerItem';
 
-const DrawerContent = (props) => {
-    const [mainDrawer, setMainDrawer] = useState(true);
-    const [filteredItems, setFilteredItems] = useState([]);
+export default class DrawerContent extends PureComponent {
+    constructor(props) {
+        super(props);
 
-    const toggleMainDrawer = () => {
-        setMainDrawer(true);
-        setFilteredItems([]);
+        this.state = {
+            mainDrawer: true,
+            filteredItems: []
+        }
+    }
+
+    static contextType = AuthContext
+
+    toggleMainDrawer() {
+        this.setState((previousState) => {
+            return {
+                mainDrawer: !previousState.mainDrawer,
+            }
+        });
     };
 
-    const { signOut } = React.useContext(AuthContext);
-
-    const onItemParentPress = (key) => {
+    onItemParentPress(key) {
         const filteredMainDrawer = DRAWER_ITEMS.find((e) => {
             return e.key === key;
         });
 
         if (filteredMainDrawer.key === "sign_out") {
-            signOut();
+            this.context.signOut();
         } else if (filteredMainDrawer.hasOwnProperty('routes')) {
-            setMainDrawer(false);
-            setFilteredItems(filteredMainDrawer);
+            this.toggleMainDrawer();
+            this.setState({
+                filteredItems: filteredMainDrawer
+            })
         } else {
-            props.navigation.toggleDrawer();
-            props.navigation.navigate(filteredMainDrawer.routeName);
+            this.props.navigation.toggleDrawer();
+            this.props.navigation.navigate(filteredMainDrawer.routeName, { screen: filteredMainDrawer.routeName });
         }
     };
 
-    function renderUserInfo() {
+    renderUserInfo() {
         return (
             <View style={styles.container_drawer_header}>
                 <Text style={styles.text_slims}>SLiMS</Text>
@@ -44,7 +55,7 @@ const DrawerContent = (props) => {
         );
     }
 
-    function renderMainDrawer() {
+    renderMainDrawer() {
         return DRAWER_ITEMS.map((parent) => (
             <OuterDrawerItem
                 key={parent.key}
@@ -52,30 +63,35 @@ const DrawerContent = (props) => {
                 icon={parent.icon}
                 routes={parent.routes}
                 onPress={() => {
-                    onItemParentPress(parent.key)
+                    this.onItemParentPress(parent.key)
                 }}
             />
         ))
     }
 
-    function renderFilteredItemsDrawer() {
-        return filteredItems.routes.map((route) => (
+    renderFilteredItemsDrawer() {
+        return this.state.filteredItems.routes.map((route) => (
             <OuterDrawerItem
                 key={route.key}
                 label={route.title}
                 icon={route.icon}
                 onPress={() => {
-                    props.navigation.toggleDrawer();
-                    props.navigation.navigate(route.routeName);
+                    this.props.navigation.toggleDrawer();
+                    this.props.navigation.navigate(route.routeName, { screen: route.routeName });
                 }}
             />
         ));
     }
 
-    function renderBackButton() {
+    renderBackButton() {
         return (
             <TouchableOpacity
-                onPress={() => toggleMainDrawer()}
+                onPress={() => {
+                    this.toggleMainDrawer()
+                    this.setState({
+                        filteredItems: []
+                    })
+                }}
             >
                 <View style={styles.backButtonSection}>
                     <Icon
@@ -89,18 +105,18 @@ const DrawerContent = (props) => {
         );
     }
 
-    return (
-        <View style={styles.container}>
-            {renderUserInfo()}
-            {mainDrawer ? null : renderBackButton()}
-            <ScrollView style={styles.drawer_content}>
-                {mainDrawer ? renderMainDrawer() : renderFilteredItemsDrawer()}
-            </ScrollView>
-        </View>
-    )
+    render() {
+        return (
+            <View style={styles.container}>
+                {this.renderUserInfo()}
+                {this.state.mainDrawer ? null : this.renderBackButton()}
+                <ScrollView style={styles.drawer_content}>
+                    {this.state.mainDrawer ? this.renderMainDrawer() : this.renderFilteredItemsDrawer()}
+                </ScrollView>
+            </View>
+        )
+    }
 }
-
-export default DrawerContent
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
@@ -113,7 +129,7 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.primary,
         height: windowHeight * 0.16,
         justifyContent: 'center',
-        paddingHorizontal: 15
+        paddingHorizontal: 16
     },
     text_slims: {
         ...FONTS.h3,
@@ -127,20 +143,20 @@ const styles = StyleSheet.create({
         flex: 1
     },
     customDrawerIcon: {
-        paddingRight: 10,
-        color: COLORS.black
+        paddingRight: 8,
+        color: COLORS.gray3
     },
     backButtonSection: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
-        paddingLeft: 20,
+        paddingVertical: 12,
+        paddingLeft: 12,
         borderBottomColor: COLORS.lightGray2,
         borderBottomWidth: 2,
 
     },
     text_back: {
         ...FONTS.body4,
-        color: COLORS.black
+        color: COLORS.gray3
     }
 })

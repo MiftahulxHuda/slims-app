@@ -1,143 +1,207 @@
-import React from 'react'
-import { StyleSheet, View, ScrollView } from 'react-native'
-import Icon from 'react-native-vector-icons/Feather';
-import { Formik } from 'formik'
+import React, { PureComponent } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { withFormik } from 'formik'
 import * as yup from 'yup';
+import { connect } from 'react-redux';
+import { bindActionCreators } from '@reduxjs/toolkit';
 
-import { COLORS, FONTS, SIZES } from '../../constants'
-import DetailHeader from '../commons/DetailHeader'
+import { COLORS, FONTS } from '../../constants'
 import CustomTextInput from '../commons/CustomTextInput';
 import CustomButton from '../commons/CustomButton';
+import { setIsLoading } from '../../store/slice/loadingSlice';
+import CRUDService from '../../service/CRUDService.service';
+import Message from '../commons/Message';
 import CustomDropdown from '../commons/CustomDropdown';
 
-let schema = yup.object().shape({
-    name: yup.string().required("Name is required"),
-});
+class MyForm extends PureComponent {
+    constructor(props) {
+        super(props)
 
-const FormSubject = ({ route, navigation }) => {
-    const { action } = route.params;
-
-    let actionTitle = "";
-    if (action == "add") {
-        actionTitle = "Add";
-    } else {
-        actionTitle = "Edit";
+        this.topicTypeDropdown = React.createRef();
+        this.topicType = [
+            { label: 'Topic', value: 't' },
+            { label: 'Geographic', value: 'g' },
+            { label: 'Name', value: 'n' },
+            { label: 'Temporal', value: 'tm' },
+            { label: 'Genre', value: 'gr' },
+            { label: 'Occupation', value: 'oc' },
+        ];
     }
 
-    const itemsType = [
-        { label: 'Topic', value: '1' },
-        { label: 'Geographic', value: '2' },
-        { label: 'Name', value: '3' },
-    ];
+    async findOneById(id) {
+        const findOneById = await CRUDService.findOneById(`${"/mst-topic"}/${id}`);
+        if (findOneById) {
+            this.props.setValues({
+                topic: findOneById.topic,
+                topic_type: findOneById.topic_type,
+                auth_list: findOneById.auth_list,
+            })
+            this.topicTypeDropdown.current.setValueFromPC(findOneById.topic_type);
+        }
+    }
 
-    return (
-        <View style={styles.container}>
-            <DetailHeader
-                title={actionTitle + " Subject"}
-                iconPosition="left"
-                icon={
-                    <Icon
-                        name="chevron-left"
-                        size={SIZES.h1}
-                        color={COLORS.primary}
-                        onPress={() => {
-                            navigation.popToTop();
-                        }}
+    componentDidMount() {
+        if (this.props.route.params.action == "edit") {
+            this.findOneById(this.props.route.params.id)
+        }
+    }
+
+    getSnapshotBeforeUpdate(prevProps, prevState) {
+        if (this.props.isReset == true) {
+            return this.props.isReset;
+        }
+
+        return null;
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (snapshot != null) {
+            this.props.resetForm({ values: '' });
+            this.props.resetFilter();
+        }
+    }
+
+    render() {
+        const {
+            values,
+            touched,
+            errors,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            setFieldValue
+        } = this.props;
+
+        return (
+            <>
+                <View style={styles.content}>
+                    <CustomTextInput
+                        label="Topic"
+                        required={true}
+                        onChangeText={handleChange('topic')}
+                        onBlur={handleBlur('topic')}
+                        value={values.topic}
+                        touched={touched.topic}
+                        error={errors.topic}
                     />
-                }
-            />
-            <ScrollView
-                contentContainerStyle={styles.formContentContainer}
-            >
-                <Formik
-                    initialValues={{
-                        subject: '',
-                        classification_code: '',
-                        type: itemsType[0].value,
-                        authority_files: ''
-                    }}
-                    validationSchema={schema}
-                    onSubmit={values => { console.log(values) }}
-                >
-                    {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, touched, errors, isValid }) => (
-                        <>
-                            <CustomTextInput
-                                label="Subject"
-                                required={true}
-                                onChangeText={handleChange('subject')}
-                                onBlur={handleBlur('subject')}
-                                value={values.subject}
-                                touched={touched.subject}
-                                error={errors.subject}
-                                containerStyle={{ marginTop: 10 }}
-                            />
 
-                            <CustomTextInput
-                                label="Classification Code"
-                                onChangeText={handleChange('classification_code')}
-                                onBlur={handleBlur('classification_code')}
-                                value={values.classification_code}
-                                touched={touched.classification_code}
-                                error={errors.classification_code}
-                                containerStyle={{ marginTop: 10 }}
-                            />
+                    <CustomDropdown
+                        required={true}
+                        ref={this.topicTypeDropdown}
+                        containerStyle={{ marginTop: 12 }}
+                        label="Topic Type"
+                        itemsContainer={this.topicType}
+                        value={values.topic_type}
+                        onChange={(state) => {
+                            setFieldValue('topic_type', state);
+                        }}
+                        touched={touched.topic_type}
+                        error={errors.topic_type}
+                    />
 
-                            <CustomDropdown
-                                containerStyle={{ marginTop: 10 }}
-                                label="Type"
-                                itemsContainer={itemsType}
-                                value={values.type}
-                                onChange={(state) => {
-                                    let newState = state;
+                    <CustomTextInput
+                        label="Authority Files"
+                        onChangeText={handleChange('auth_list')}
+                        onBlur={handleBlur('auth_list')}
+                        value={values.auth_list}
+                        touched={touched.auth_list}
+                        error={errors.auth_list}
+                        containerStyle={{ marginTop: 24 }}
+                    />
 
-                                    if (typeof state === "function") {
-                                        newState = state(values.type);
-                                    }
-
-                                    setFieldValue('type', newState);
-                                }}
-                                touched={touched.type}
-                                error={errors.type}
-                            />
-
-                            <CustomTextInput
-                                label="Authority Files"
-                                onChangeText={handleChange('authority_files')}
-                                onBlur={handleBlur('authority_files')}
-                                value={values.authority_files}
-                                touched={touched.authority_files}
-                                error={errors.authority_files}
-                                containerStyle={{ marginTop: 20 }}
-                            />
-
-                            <CustomButton
-                                containerStyle={styles.container_submit}
-                                buttonStyle={styles.submit}
-                                titleStyle={styles.text_submit}
-                                title="Submit"
-                                onPress={handleSubmit}
-                            />
-                        </>
-                    )}
-                </Formik>
-            </ScrollView>
-        </View>
-    )
+                    <CustomButton
+                        containerStyle={styles.container_submit}
+                        buttonStyle={styles.submit}
+                        titleStyle={styles.text_submit}
+                        title="Submit"
+                        onPress={handleSubmit}
+                    />
+                </View>
+            </>
+        )
+    }
 }
 
-export default FormSubject
+const schema = yup.object().shape({
+    topic: yup.string().required("Topic is required").max(100),
+    topic_type: yup.string().required("Topic Type is required"),
+});
+
+const create = async (post) => {
+    const created = await CRUDService.create("/mst-topic", post);
+    return created;
+}
+
+const updateOneById = async (id, post) => {
+    const updated = await CRUDService.updateOneById("/mst-topic", id, post);
+    return updated;
+}
+
+const formikEnhancer = withFormik({
+    mapPropsToValues: (props) => {
+        return ({
+            topic: "",
+            topic_type: "",
+            auth_list: "",
+        })
+    },
+    validationSchema: schema,
+    // enableReinitialize: true,
+    // Custom sync validation
+    // validate: values => {
+    //     const errors = {};
+
+    //     if (!values.name) {
+    //         errors.name = 'Required';
+    //     }
+
+    //     return errors;
+    // },
+
+    handleSubmit: async (values, { props }) => {
+        props.setIsLoading();
+
+        let req;
+        let messageToast;
+        if (props.route.params.action == "add") {
+            req = await create(values)
+            messageToast = "Data added";
+        } else {
+            req = await updateOneById(props.route.params.id, values);
+            messageToast = "Data updated";
+        }
+
+        if (req) {
+            props.setIsLoading();
+            Message.showToast(messageToast)
+            props.navigation.goBack();
+        } else {
+            props.setIsLoading();
+        }
+    },
+
+    // displayName: 'BasicForm',
+})(MyForm);
+
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators(
+        {
+            setIsLoading
+        },
+        dispatch
+    );
+}
+
+export default connect(null, mapDispatchToProps)(formikEnhancer)
 
 const styles = StyleSheet.create({
-    container: {
+    content: {
         flex: 1,
-        backgroundColor: COLORS.white
-    },
-    formContentContainer: {
-        flexGrow: 1,
-        padding: 20
+        backgroundColor: COLORS.white,
+        padding: 16
     },
     container_submit: {
-        marginTop: 20
+        marginTop: 24
     },
     submit: {
         height: 50,

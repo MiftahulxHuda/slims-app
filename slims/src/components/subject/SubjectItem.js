@@ -1,39 +1,63 @@
-import React from 'react'
+import React, { PureComponent } from 'react'
 import { TouchableOpacity } from 'react-native'
 import { StyleSheet, Text, View } from 'react-native'
 
 import { COLORS, FONTS, SIZES } from '../../constants'
 import PopupMenu from '../commons/PopupMenu'
+import TopicType from './enum/TopicType'
 
-const SubjectItem = (props) => {
-    return (
-        <TouchableOpacity onPress={props.onPress}>
+class SubjectItem extends PureComponent {    
+    getTopicType() {
+        switch (this.props.topic_type) {
+            case TopicType.TOPIC:
+                return "Topic"
+
+            case TopicType.GEOGRAPHIC:
+                return "Geographic"
+
+            case TopicType.NAME:
+                return "Name"
+
+            case TopicType.TEMPORAL:
+                return "Temporal"
+
+            case TopicType.GENRE:
+                return "Genre"
+
+            case TopicType.OCCUPATION:
+                return "Occupation"
+
+            default:
+                break;
+        }
+    }
+
+    render() {
+        return (
             <View style={styles.item}>
                 <View style={styles.detail_item}>
-                    <Text style={styles.item_text}>{props.subject}</Text>
-                    <Text style={styles.item_text}>{props.classification_code}</Text>
-                    <Text style={styles.item_text}>{props.subject_type}</Text>
-                    <Text style={styles.item_text}>{props.authority_files}</Text>
+                    <Text style={styles.item_text}>{this.props.topic}</Text>
+                    <Text style={styles.item_text}>{this.getTopicType()}</Text>
+                    <Text style={styles.item_text}>{this.props.auth_list}</Text>
                 </View>
                 <PopupMenu
                     size={SIZES.h3}
-                    onEdit={props.onEdit}
-                    onDelete={props.onDelete}
+                    onEdit={this.props.onEdit}
+                    onDelete={this.props.onDelete}
                 />
             </View>
-        </TouchableOpacity>
-    )
+        )
+    }
 }
 
-export default SubjectItem
+export default SubjectItem;
 
 const styles = StyleSheet.create({
     item: {
         flexDirection: 'row',
         backgroundColor: COLORS.white,
         padding: 10,
-        marginVertical: 15,
-        marginHorizontal: 12,
+        marginHorizontal: 16,
         elevation: 2,
         borderRadius: 8
     },
@@ -43,6 +67,6 @@ const styles = StyleSheet.create({
     },
     item_text: {
         ...FONTS.body4,
-        color: COLORS.black
+        color: COLORS.gray
     },
 })

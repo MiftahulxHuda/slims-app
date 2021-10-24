@@ -4,35 +4,33 @@ import { Formik } from 'formik'
 import ImagePicker from 'react-native-image-crop-picker';
 
 import { COLORS, FONTS } from '../../constants'
-import CustomTextInput from '../commons/CustomTextInput';
 import CustomButton from '../commons/CustomButton';
 
-const ChooseUploadImage = ({ 
+const ChooseUploadImage = ({
     onSetImage,
-    onClose, 
+    onClose,
 }) => {
     const takePhotoFromCamera = () => {
         ImagePicker.openCamera({
-            compressImageMaxWidth: 300,
-            compressImageMaxHeight: 300,
+            // compressImageMaxWidth: 300,
+            // compressImageMaxHeight: 300,
+            // compressImageQuality: 0.7,
             cropping: true,
-            compressImageQuality: 0.7
+            freeStyleCropEnabled: true,
         }).then(image => {
-            onSetImage(image.path);
-            onClose();
+            onSetImage(image);
+            // onClose();
         }).catch(error => {
         });
     }
 
     const choosePhotoFromLibrary = () => {
         ImagePicker.openPicker({
-            width: 300,
-            height: 300,
             cropping: true,
-            compressImageQuality: 0.7
+            freeStyleCropEnabled: true,
         }).then(image => {
-            onSetImage(image.path);
-            onClose();
+            onSetImage(image);
+            // onClose();
         }).catch(error => {
         });
     }

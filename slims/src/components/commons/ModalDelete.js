@@ -7,10 +7,10 @@ import { COLORS, FONTS } from '../../constants'
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 
-const ModalDelete = ({ onCancel, onDelete }) => {
+const ModalDelete = ({ onCancel, onSubmit }) => {
     return (
         <View style={styles.container}>
-            <View style={[{ width: windowWidth * 0.8 }, styles.modalView]}>
+            <View style={{ width: windowWidth * 0.8 }}>
                 <View style={styles.contentView}>
                     <Text style={styles.contentText}>Do you want delete this item?</Text>
                 </View>
@@ -23,7 +23,7 @@ const ModalDelete = ({ onCancel, onDelete }) => {
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[styles.button, styles.deleteButton]}
-                        onPress={onDelete}
+                        onPress={onSubmit}
                     >
                         <Text style={styles.deleteText}>Delete</Text>
                     </TouchableOpacity>
@@ -39,13 +39,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: COLORS.black,
-        opacity: 0.8
-    },
-    modalView: {
-        backgroundColor: COLORS.white,
-        borderRadius: 8
+        alignItems: "center"
     },
     contentView: {
         backgroundColor: COLORS.white,
@@ -68,24 +62,22 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     cancelButton: {
-        backgroundColor: COLORS.white,
         borderRightColor: COLORS.lightGray4,
         borderRightWidth: 0.5,
         borderBottomLeftRadius: 8,
     },
     deleteButton: {
-        backgroundColor: COLORS.white,
         borderLeftColor: COLORS.lightGray4,
         borderLeftWidth: 0.5,
         borderBottomRightRadius: 8,
     },
     contentText: {
         ...FONTS.h3,
-        color: COLORS.black,
+        color: COLORS.gray3,
     },
     cancelText: {
         ...FONTS.h3,
-        color: COLORS.lightGray,
+        color: COLORS.gray3,
     },
     deleteText: {
         ...FONTS.h3,

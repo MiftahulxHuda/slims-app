@@ -1,29 +1,31 @@
-import React from 'react'
+import React, { PureComponent } from 'react'
 import { TouchableOpacity } from 'react-native'
 import { StyleSheet, Text, View } from 'react-native'
 
 import { COLORS, FONTS, SIZES } from '../../constants'
 import PopupMenu from '../commons/PopupMenu'
 
-const FrequencyItem = (props) => {
-    return (
-        <TouchableOpacity onPress={props.onPress}>
+class FrequencyItem extends PureComponent {
+    render() {
+        return (
             <View style={styles.item}>
                 <View style={styles.detail_item}>
-                    <Text style={styles.item_text}>{props.description}</Text>
-                    <Text style={styles.item_text}>{props.name}</Text>
+                    <Text style={styles.item_text}>{this.props.frequency}</Text>
+                    <Text style={styles.item_text}>{this.props.language_name}</Text>
+                    <Text style={styles.item_text}>{this.props.time_increment}</Text>
+                    <Text style={styles.item_text}>{this.props.time_unit}</Text>
                 </View>
                 <PopupMenu
                     size={SIZES.h3}
-                    onEdit={props.onEdit}
-                    onDelete={props.onDelete}
+                    onEdit={this.props.onEdit}
+                    onDelete={this.props.onDelete}
                 />
             </View>
-        </TouchableOpacity>
-    )
+        )
+    }
 }
 
-export default FrequencyItem
+export default FrequencyItem;
 
 const styles = StyleSheet.create({
     item: {

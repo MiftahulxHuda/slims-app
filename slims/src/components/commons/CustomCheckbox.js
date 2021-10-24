@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
     label: {
         margin: 5,
         ...FONTS.body3,
-        color: COLORS.lightGray
+        color: COLORS.gray3
     },
 })

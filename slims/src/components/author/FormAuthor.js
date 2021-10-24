@@ -1,129 +1,216 @@
-import React from 'react'
-import { StyleSheet, View, ScrollView } from 'react-native'
-import Icon from 'react-native-vector-icons/Feather';
-import { Formik } from 'formik'
+import React, { PureComponent } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { withFormik } from 'formik'
 import * as yup from 'yup';
+import { connect } from 'react-redux';
+import { bindActionCreators } from '@reduxjs/toolkit';
 
-import { COLORS, FONTS, SIZES } from '../../constants'
-import DetailHeader from '../commons/DetailHeader'
+import { COLORS, FONTS } from '../../constants'
 import CustomTextInput from '../commons/CustomTextInput';
 import CustomButton from '../commons/CustomButton';
+import { setIsLoading } from '../../store/slice/loadingSlice';
+import CRUDService from '../../service/CRUDService.service';
+import Message from '../commons/Message';
 import CustomDropdown from '../commons/CustomDropdown';
 
-let schema = yup.object().shape({
-    name: yup.string().required("Name is required"),
-    type: yup.string().required("Type is required"),
-});
+class MyForm extends PureComponent {
+    constructor(props) {
+        super(props)
 
-const FormAuthor = ({ route, navigation }) => {
-    const { action } = route.params;
-
-    let actionTitle = "";
-    if (action == "add") {
-        actionTitle = "Add";
-    } else {
-        actionTitle = "Edit";
+        this.authorityTypeDropdown = React.createRef();
+        this.itemsType = [
+            { label: 'Personal Name', value: 'p' },
+            { label: 'Organizational Body', value: 'o' },
+            { label: 'Conference', value: 'c' },
+        ];
     }
 
-    const itemsType = [
-        { label: 'Personal Name', value: '1' },
-        { label: 'Organizational Body', value: '2' },
-        { label: 'Conference', value: '3' },
-    ];
+    async findOneById(id) {
+        const findOneById = await CRUDService.findOneById(`${"/mst-author"}/${id}`);
+        if (findOneById) {
+            this.props.setValues({
+                author_name: findOneById.author_name,
+                author_year: findOneById.author_year,
+                authority_type: findOneById.authority_type,
+                auth_list: findOneById.auth_list,
+            })
+            this.authorityTypeDropdown.current.setValueFromPC(findOneById.authority_type);
+        }
+    }
 
-    return (
-        <View style={styles.container}>
-            <DetailHeader
-                title={actionTitle + " Author"}
-                iconPosition="left"
-                icon={
-                    <Icon
-                        name="chevron-left"
-                        size={SIZES.h1}
-                        color={COLORS.primary}
-                        onPress={() => {
-                            navigation.popToTop();
-                        }}
+    componentDidMount() {
+        if (this.props.route.params.action == "edit") {
+            this.findOneById(this.props.route.params.id)
+        }
+    }
+
+    getSnapshotBeforeUpdate(prevProps, prevState) {
+        if (this.props.isReset == true) {
+            return this.props.isReset;
+        }
+
+        return null;
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (snapshot != null) {
+            this.props.resetForm({ values: '' });
+            this.props.resetFilter();
+        }
+    }
+
+    render() {
+        const {
+            values,
+            touched,
+            errors,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+            setFieldValue
+        } = this.props;
+
+        return (
+            <>
+                <View style={styles.content}>
+                    <CustomTextInput
+                        label="Author"
+                        required={true}
+                        onChangeText={handleChange('author_name')}
+                        onBlur={handleBlur('author_name')}
+                        value={values.author_name}
+                        touched={touched.author_name}
+                        error={errors.author_name}
                     />
-                }
-            />
-            <ScrollView
-                contentContainerStyle={styles.formContentContainer}
-            >
-                <Formik
-                    initialValues={{ name: '', birth_year: '', type: itemsType[0].value }}
-                    validationSchema={schema}
-                    onSubmit={values => { console.log(values) }}
-                >
-                    {({ handleChange, handleBlur, handleSubmit, setFieldValue, values, touched, errors, isValid }) => (
-                        <>
-                            <CustomTextInput
-                                label="Name"
-                                required={true}
-                                onChangeText={handleChange('name')}
-                                onBlur={handleBlur('name')}
-                                value={values.name}
-                                touched={touched.name}
-                                error={errors.name}
-                                containerStyle={{ marginTop: 10 }}
-                            />
 
-                            <CustomTextInput
-                                label="Birth Year"
-                                onChangeText={handleChange('birth_year')}
-                                onBlur={handleBlur('birth_year')}
-                                value={values.birth_year}
-                                touched={touched.birth_year}
-                                error={errors.birth_year}
-                                containerStyle={{ marginTop: 10 }}
-                            />
+                    <CustomTextInput
+                        label="Author Year"
+                        onChangeText={handleChange('author_year')}
+                        onBlur={handleBlur('author_year')}
+                        value={values.author_year}
+                        touched={touched.author_year}
+                        error={errors.author_year}
+                        containerStyle={{ marginTop: 12 }}
+                    />
 
-                            <CustomDropdown
-                                containerStyle={{ marginTop: 10 }}
-                                label="Type"
-                                itemsContainer={itemsType}
-                                value={values.type}
-                                onChange={(state) => {
-                                    let newState = state;
+                    <CustomDropdown
+                        required={true}
+                        ref={this.authorityTypeDropdown}
+                        containerStyle={{ marginTop: 12 }}
+                        label="Authority Type"
+                        itemsContainer={this.itemsType}
+                        value={values.authority_type}
+                        onChange={(state) => {
+                            setFieldValue('authority_type', state);
+                        }}
+                        touched={touched.authority_type}
+                        error={errors.authority_type}
+                    />
 
-                                    if (typeof state === "function") {
-                                        newState = state(values.type);
-                                    }
+                    <CustomTextInput
+                        label="Authority Files"
+                        onChangeText={handleChange('auth_list')}
+                        onBlur={handleBlur('auth_list')}
+                        value={values.auth_list}
+                        touched={touched.auth_list}
+                        error={errors.auth_list}
+                        containerStyle={{ marginTop: 24 }}
+                    />
 
-                                    setFieldValue('type', newState);
-                                }}
-                                touched={touched.type}
-                                error={errors.type}
-                            />
-
-                            <CustomButton
-                                containerStyle={styles.container_submit}
-                                buttonStyle={styles.submit}
-                                titleStyle={styles.text_submit}
-                                title="Submit"
-                                onPress={handleSubmit}
-                            />
-                        </>
-                    )}
-                </Formik>
-            </ScrollView>
-        </View>
-    )
+                    <CustomButton
+                        containerStyle={styles.container_submit}
+                        buttonStyle={styles.submit}
+                        titleStyle={styles.text_submit}
+                        title="Submit"
+                        onPress={handleSubmit}
+                    />
+                </View>
+            </>
+        )
+    }
 }
 
-export default FormAuthor
+const schema = yup.object().shape({
+    author_name: yup.string().required("Author is required").max(100),
+    authority_type: yup.string().required("Authority Type is required"),
+});
+
+const create = async (post) => {
+    const created = await CRUDService.create("/mst-author", post);
+    return created;
+}
+
+const updateOneById = async (id, post) => {
+    const updated = await CRUDService.updateOneById("/mst-author", id, post);
+    return updated;
+}
+
+const formikEnhancer = withFormik({
+    mapPropsToValues: (props) => {
+        return ({
+            author_name: "",
+            author_year: "",
+            authority_type: "",
+            auth_list: "",
+        })
+    },
+    validationSchema: schema,
+    // enableReinitialize: true,
+    // Custom sync validation
+    // validate: values => {
+    //     const errors = {};
+
+    //     if (!values.name) {
+    //         errors.name = 'Required';
+    //     }
+
+    //     return errors;
+    // },
+
+    handleSubmit: async (values, { props }) => {
+        props.setIsLoading();
+
+        let req;
+        let messageToast;
+        if (props.route.params.action == "add") {
+            req = await create(values)
+            messageToast = "Data added";
+        } else {
+            req = await updateOneById(props.route.params.id, values);
+            messageToast = "Data updated";
+        }
+
+        if (req) {
+            props.setIsLoading();
+            Message.showToast(messageToast)
+            props.navigation.goBack();
+        } else {
+            props.setIsLoading();
+        }
+    },
+
+    // displayName: 'BasicForm',
+})(MyForm);
+
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators(
+        {
+            setIsLoading
+        },
+        dispatch
+    );
+}
+
+export default connect(null, mapDispatchToProps)(formikEnhancer)
 
 const styles = StyleSheet.create({
-    container: {
+    content: {
         flex: 1,
-        backgroundColor: COLORS.white
-    },
-    formContentContainer: {
-        flexGrow: 1,
-        padding: 20
+        backgroundColor: COLORS.white,
+        padding: 15
     },
     container_submit: {
-        marginTop: 30
+        marginTop: 20
     },
     submit: {
         height: 50,

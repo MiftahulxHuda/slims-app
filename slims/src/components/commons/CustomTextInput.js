@@ -1,10 +1,13 @@
 import React from 'react'
 import { StyleSheet, Text, View, TextInput } from 'react-native'
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import TextInputMask from 'react-native-text-input-mask';
+import MaskInput, { Masks } from 'react-native-mask-input';
 
 import { COLORS, FONTS, SIZES } from '../../constants';
 
 const CustomTextInput = ({
+    keyboardType = "default",
     onChangeText,
     onBlur,
     iconPosition,
@@ -18,6 +21,8 @@ const CustomTextInput = ({
     numberOfLines = 1,
     error,
     touched,
+    mask,
+    placeholder,
     ...props
 }) => {
     const getFlexDirection = () => {
@@ -57,8 +62,56 @@ const CustomTextInput = ({
         return style;
     }
 
-    // console.log("getFlexDirection", getStyleContainerInput())
+    const getLabel = () => {
+        if(!label) {
+            return null;
+        }
+        
+        return (
+            <Text style={styles.label}>{label + (required ? ' *' : '')}</Text>
+        )
+    }
+    
+    const getTextInput = () => {
+        if (mask) {
+            return (
+                // <TextInputMask
+                //     placeholder={placeholder}
+                //     keyboardType={keyboardType}
+                //     onChangeText={(formatted, extracted) => {
+                //         onChangeText(formatted, extracted)
+                //     }}
+                //     mask={mask}
+                //     style={[styles.input, {textAlignVertical: multiline ? 'top' : 'center'}]}
+                //     value={value ? value : ''}
+                // />
 
+                <MaskInput
+                    placeholder={placeholder}
+                    keyboardType={keyboardType}
+                    style={[styles.input, { textAlignVertical: multiline ? 'top' : 'center' }]}
+                    value={value ? value : ''}
+                    onChangeText={(formatted, extracted) => {
+                        onChangeText(formatted, extracted)
+                    }}
+                    mask={mask}
+                />
+            )
+        } else {
+            return (
+                <TextInput
+                    keyboardType={keyboardType}
+                    multiline={multiline}
+                    numberOfLines={numberOfLines}
+                    placeholder={placeholder ? placeholder : label}
+                    style={[styles.input, { textAlignVertical: multiline ? 'top' : 'center' }]}
+                    onChangeText={onChangeText}
+                    onBlur={onBlur}
+                    value={value ? value : ''}
+                    {...props} />
+            )
+        }
+    }
 
     return (
         // <View style={{ marginBottom: 10 }}>
@@ -70,17 +123,20 @@ const CustomTextInput = ({
         //     {error && <Text style={styles.error}>{error}</Text>}
         // </View>
         <View style={containerStyle}>
-            <Text style={styles.label}>{label + (required ? ' *': '')}</Text>
+            {getLabel()}
             <View style={getStyleContainerInput()}>
                 {icon}
-                <TextInput
+                {getTextInput()}
+                {/* <TextInput
+                    keyboardType={keyboardType}
                     multiline={multiline}
                     numberOfLines={numberOfLines}
                     placeholder={label}
                     style={[styles.input, {textAlignVertical: multiline ? 'top' : 'center'}]}
                     onChangeText={onChangeText}
                     onBlur={onBlur}
-                    {...props} />
+                    value={value ? value : ''}
+                    {...props} /> */}
             </View>
             {error && touched ? <Text style={{ color: COLORS.lightRed, ...FONTS.body4 }}>{error}</Text> : null}
         </View>
@@ -92,12 +148,12 @@ export default CustomTextInput
 const styles = StyleSheet.create({
     label: {
         ...FONTS.body3,
-        color: COLORS.lightGray,
-        marginBottom: 10
+        color: COLORS.gray3,
+        marginBottom: 8
     },
     input: {
         flex: 1,
-        color: COLORS.lightGray,
+        color: COLORS.gray3,
         ...FONTS.body3,
         textAlignVertical: 'top'
     }

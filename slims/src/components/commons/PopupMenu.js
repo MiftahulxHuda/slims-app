@@ -13,13 +13,17 @@ import { COLORS, FONTS } from '../../constants';
 
 const PopupMenu = (props) => (
     <Menu>
-        <MenuTrigger>
-            <Icon name="more-vertical" size={props.size} color={COLORS.black} />
+        <MenuTrigger customStyles={{triggerWrapper: { width: 40, height: 40, alignItems: 'flex-end'}}}>
+            <Icon name="more-vertical" size={props.size} color={COLORS.gray3} />
         </MenuTrigger>
         <MenuOptions>
-            <MenuOption onSelect={props.onEdit}>
-                <Text style={styles.text}>Edit</Text>
-            </MenuOption>
+            {
+                props.onEdit ?
+                    <MenuOption onSelect={props.onEdit}>
+                        <Text style={styles.text}>Edit</Text>
+                    </MenuOption> : null
+            }
+
             <MenuOption onSelect={props.onDelete}>
                 <Text style={styles.text}>Delete</Text>
             </MenuOption>
@@ -32,6 +36,6 @@ export default PopupMenu;
 const styles = StyleSheet.create({
     text: {
         ...FONTS.body4,
-        color: COLORS.black
+        color: COLORS.gray3
     }
 });

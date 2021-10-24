@@ -1,26 +1,179 @@
-import * as React from 'react';
+import React, { Component } from 'react';
+import { Text, TouchableOpacity } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { connect } from 'react-redux';
+import Icon from 'react-native-vector-icons/Feather';
+import { bindActionCreators } from '@reduxjs/toolkit';
 
+import { COLORS, FONTS, SIZES } from '../constants';
+import { setInitialValues, resetFilter } from '../store/slice/filterSubjectSlice';
+import { setModalVisible } from '../store/slice/loadingSlice';
 import Subject from '../components/subject/Subject';
+import FilterSubject from '../components/subject/FilterSubject';
 import FormSubject from '../components/subject/FormSubject';
+import ButtonResetForm from '../components/commons/ButtonResetForm';
 
 const Stack = createStackNavigator();
 
-function SubjectScreen() {
+class SubjectScreen extends Component {
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
     return (
-        <Stack.Navigator
-            headerMode="none"
+      <Stack.Navigator
+        initialRouteName="Subject"
+        screenOptions={{
+          headerMode: 'float',
+          headerTintColor: COLORS.white,
+          headerStyle: { backgroundColor: COLORS.primary },
+        }}>
+        <Stack.Screen
+          name="Subject"
+          options={{
+            headerShown: false,
+          }}
         >
-            <Stack.Screen
-                name="Subject"
-                component={Subject}
-            />
-            <Stack.Screen
-                name="FormSubject"
-                component={FormSubject}
-            />
-        </Stack.Navigator>
-    );
+          {props => {
+            return (
+              <Subject {...props}
+                filter={this.props.filter}
+                modalVisible={this.props.modalVisible}
+                setModalVisible={this.props.setModalVisible}
+              />
+            )
+          }}
+        </Stack.Screen>
+        <Stack.Screen
+          name="FilterSubject"
+          options={
+            ({ navigation }) => ({
+              headerTitle: props => (
+                <Text style={{
+                  ...FONTS.navigationTitle,
+                  color: COLORS.white
+                }}>Filter Subject</Text>
+              ),
+              headerLeft: (props) => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                >
+                  <Icon
+                    name="arrow-left"
+                    size={SIZES.h2}
+                    color={COLORS.white}
+                  />
+                </TouchableOpacity>
+              ),
+              headerLeftContainerStyle: {
+                left: 10,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              headerRight: (props) => (
+                <TouchableOpacity
+                  onPress={() => this.props.resetFilter()}
+                >
+                  <ButtonResetForm />
+                </TouchableOpacity>
+              ),
+              headerRightContainerStyle: {
+                right: 10,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+            })
+          }
+        >
+          {props => {
+            return (
+              <FilterSubject {...props}
+                filter={this.props.filter}
+                isReset={this.props.isReset}
+                setInitialValues={this.props.setInitialValues}
+                resetFilter={this.props.resetFilter}
+              />
+            )
+          }}
+        </Stack.Screen>
+        <Stack.Screen
+          name="FormSubject"
+          options={
+            ({ route, navigation }) => ({
+              headerTitle: props => {
+                return (
+                  <Text style={{
+                    ...FONTS.navigationTitle,
+                    color: COLORS.white
+                  }}>Form {route.params.action == "add" ? "Add" : "Edit"}</Text>
+                )
+              },
+              headerLeft: (props) => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                >
+                  <Icon
+                    name="arrow-left"
+                    size={SIZES.h2}
+                    color={COLORS.white}
+                  />
+                </TouchableOpacity>
+              ),
+              headerLeftContainerStyle: {
+                left: 10,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+              headerRight: (props) => (
+                <TouchableOpacity
+                  onPress={() => this.props.resetFilter()}
+                >
+                  <ButtonResetForm />
+                </TouchableOpacity>
+              ),
+              headerRightContainerStyle: {
+                right: 10,
+                justifyContent: 'center',
+                alignItems: 'center',
+              },
+            })
+          }
+        >
+          {props => {
+            return (
+              <FormSubject {...props}
+                isReset={this.props.isReset}
+                resetFilter={this.props.resetFilter}
+              />
+            )
+          }}
+        </Stack.Screen>
+      </Stack.Navigator>
+    )
+  }
 }
 
-export default SubjectScreen;
+function mapStateToProps(state) {
+  return {
+    filter: state.filterSubject.initialValues,
+    isReset: state.filterSubject.isReset,
+    modalVisible: state.loading.modalVisible
+  };
+}
+
+function mapDispatchToProps(dispatch) {
+  return bindActionCreators(
+    {
+      setInitialValues,
+      resetFilter,
+      setModalVisible
+    },
+    dispatch
+  );
+}
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(SubjectScreen)

@@ -1,104 +1,182 @@
-import React from 'react'
-import { StyleSheet, View, ScrollView } from 'react-native'
-import Icon from 'react-native-vector-icons/Feather';
-import { Formik } from 'formik'
+import React, { PureComponent } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { withFormik } from 'formik'
 import * as yup from 'yup';
+import { connect } from 'react-redux';
+import { bindActionCreators } from '@reduxjs/toolkit';
 
-import { COLORS, FONTS, SIZES } from '../../constants'
-import DetailHeader from '../commons/DetailHeader'
+import { COLORS, FONTS } from '../../constants'
 import CustomTextInput from '../commons/CustomTextInput';
 import CustomButton from '../commons/CustomButton';
+import { setIsLoading } from '../../store/slice/loadingSlice';
+import CRUDService from '../../service/CRUDService.service';
+import Message from '../commons/Message';
 
-let schema = yup.object().shape({
-    code: yup.string().required("Code is required"),
-    name: yup.string().required("Name is required"),
-});
-
-const FormLocation = ({ route, navigation }) => {
-    const { action } = route.params;
-
-    let actionTitle = "";
-    if(action == "add") {
-        actionTitle = "Add";
-    } else {
-        actionTitle = "Edit";
+class MyForm extends PureComponent {
+    constructor(props) {
+        super(props)
     }
-    
-    return (
-        <View style={styles.container}>
-            <DetailHeader
-                title={actionTitle + " Location"}
-                iconPosition="left"
-                icon={
-                    <Icon
-                        name="chevron-left"
-                        size={SIZES.h1}
-                        color={COLORS.primary}
-                        onPress={() => {
-                            navigation.popToTop();
-                        }}
+
+    async findOneById(id) {
+        const findOneById = await CRUDService.findOneById(`${"/mst-location"}/${id}`);
+        if (findOneById) {
+            this.props.setValues({
+                location_id: findOneById.location_id,
+                location_name: findOneById.location_name,
+            })
+        }
+    }
+
+    componentDidMount() {
+        if (this.props.route.params.action == "edit") {
+            this.findOneById(this.props.route.params.id)
+        }
+    }
+
+    getSnapshotBeforeUpdate(prevProps, prevState) {
+        if (this.props.isReset == true) {
+            return this.props.isReset;
+        }
+
+        return null;
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (snapshot != null) {
+            this.props.resetForm({ values: '' });
+            this.props.resetFilter();
+        }
+    }
+
+    render() {
+        const {
+            values,
+            touched,
+            errors,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+        } = this.props;
+
+        return (
+            <>
+                <View style={styles.content}>
+                    <CustomTextInput
+                        label="Code"
+                        required={true}
+                        onChangeText={handleChange('location_id')}
+                        onBlur={handleBlur('location_id')}
+                        value={values.location_id}
+                        touched={touched.location_id}
+                        error={errors.location_id}
                     />
-                }
-            />
-            <ScrollView
-                contentContainerStyle={styles.formContentContainer}
-            >
-                <Formik
-                    initialValues={{ code: '', name: '' }}
-                    validationSchema={schema}
-                    onSubmit={values => { console.log(values) }}
-                >
-                    {({ handleChange, handleBlur, handleSubmit, values, touched, errors, isValid }) => (
-                        <>
-                            <CustomTextInput
-                                label="Code"
-                                required={true}
-                                onChangeText={handleChange('code')}
-                                onBlur={handleBlur('code')}
-                                value={values.code}
-                                touched={touched.code}
-                                error={errors.code}
-                            />
 
-                            <CustomTextInput
-                                label="Name"
-                                required={true}
-                                onChangeText={handleChange('name')}
-                                onBlur={handleBlur('name')}
-                                value={values.name}
-                                touched={touched.name}
-                                error={errors.name}
-                                containerStyle={{ marginTop: 10 }}
-                            />
+                    <CustomTextInput
+                        label="Location"
+                        required={true}
+                        onChangeText={handleChange('location_name')}
+                        onBlur={handleBlur('location_name')}
+                        value={values.location_name}
+                        touched={touched.location_name}
+                        error={errors.location_name}
+                        containerStyle={{ marginTop: 12 }}
+                    />
 
-                            <CustomButton
-                                containerStyle={styles.container_submit}
-                                buttonStyle={styles.submit}
-                                titleStyle={styles.text_submit}
-                                title="Submit"
-                                onPress={handleSubmit}
-                            />
-                        </>
-                    )}
-                </Formik>
-            </ScrollView>
-        </View>
-    )
+                    <CustomButton
+                        containerStyle={styles.container_submit}
+                        buttonStyle={styles.submit}
+                        titleStyle={styles.text_submit}
+                        title="Submit"
+                        onPress={handleSubmit}
+                    />
+                </View>
+            </>
+        )
+    }
 }
 
-export default FormLocation
+const schema = yup.object().shape({
+    location_id: yup.string().required("Code is required")
+        .test('len', 'Code must be at most 3 characters', val => {
+            if (!val) {
+                return false;
+            }
+            return val.length <= 3
+        }),
+    location_name: yup.string().required("Location is required"),
+});
+
+const create = async (post) => {
+    const created = await CRUDService.create("/mst-location", post);
+    return created;
+}
+
+const updateOneById = async (id, post) => {
+    const updated = await CRUDService.updateOneById("/mst-location", id, post);
+    return updated;
+}
+
+const formikEnhancer = withFormik({
+    mapPropsToValues: (props) => {
+        return ({ location_id: "", location_name: "" })
+    },
+    validationSchema: schema,
+    // enableReinitialize: true,
+    // Custom sync validation
+    // validate: values => {
+    //     const errors = {};
+
+    //     if (!values.name) {
+    //         errors.name = 'Required';
+    //     }
+
+    //     return errors;
+    // },
+
+    handleSubmit: async (values, { props }) => {
+        props.setIsLoading();
+
+        let req;
+        let messageToast;
+        if (props.route.params.action == "add") {
+            req = await create(values)
+            messageToast = "Data added";
+        } else {
+            req = await updateOneById(props.route.params.id, values);
+            messageToast = "Data updated";
+        }
+
+        if (req) {
+            props.setIsLoading();
+            Message.showToast(messageToast)
+            props.navigation.goBack();
+        } else {
+            props.setIsLoading();
+        }
+    },
+
+    // displayName: 'BasicForm',
+})(MyForm);
+
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators(
+        {
+            setIsLoading
+        },
+        dispatch
+    );
+}
+
+export default connect(null, mapDispatchToProps)(formikEnhancer)
 
 const styles = StyleSheet.create({
-    container: {
+    content: {
         flex: 1,
-        backgroundColor: COLORS.white
-    },
-    formContentContainer: {
-        flexGrow: 1,
-        padding: 20
+        backgroundColor: COLORS.white,
+        padding: 16
     },
     container_submit: {
-        marginTop: 20
+        marginTop: 24
     },
     submit: {
         height: 50,

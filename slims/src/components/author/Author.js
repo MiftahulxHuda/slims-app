@@ -1,149 +1,227 @@
-import React, { useState } from 'react'
-import { StyleSheet, View, StatusBar, Dimensions, FlatList, Modal } from 'react-native'
-import BottomSheet from 'reanimated-bottom-sheet';
+import React, { Component } from 'react'
+import { StyleSheet, View, StatusBar, Dimensions, FlatList, Modal, ActivityIndicator } from 'react-native'
 
 import { COLORS } from '../../constants'
 import Header from '../commons/Header';
-import ModalDelete from '../commons/ModalDelete';
-import FilterAuthor from './FilterAuthor';
 import AuthorItem from './AuthorItem';
-
-const DATA = [
-    {
-        id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
-        name: 'name',
-        year: 'year',
-        type: 'type',
-    },
-    {
-        id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
-        name: 'name',
-        year: 'year',
-        type: 'type',
-    },
-    {
-        id: '58694a0f-3da1-471f-bd96-145571e29d72',
-        name: 'name',
-        year: 'year',
-        type: 'type',
-    },
-    {
-        id: '4',
-        name: 'name',
-        year: 'year',
-        type: 'type',
-    },
-    {
-        id: '5',
-        name: 'name',
-        year: 'year',
-        type: 'type',
-    },
-    {
-        id: '6',
-        name: 'name',
-        year: 'year',
-        type: 'type',
-    },
-];
+import ModalDelete from '../commons/ModalDelete';
+import CRUDService from '../../service/CRUDService.service';
+import EmptyList from '../commons/EmptyList';
+import Message from '../commons/Message';
 
 const windowWidth = Dimensions.get('window').width;
 const windowHeight = Dimensions.get('window').height;
 const statusBarHeight = StatusBar.currentHeight;
 const bottomSheetHeight = windowHeight - statusBarHeight;
 
-const Author = ({ navigation }) => {
-    const [modalVisible, setModalVisible] = useState(false);
-    const [blur, setBlur] = useState(0);
+export default class Author extends Component {
+    constructor(props) {
+        super(props)
 
-    const renderItem = ({ item }) => (
-        <AuthorItem
-            name={item.name}
-            year={item.year}
-            type={item.type}
-            onEdit={() => navigation.push("FormAuthor", { action: "edit" })}
-            onDelete={() => setModalVisible(true)}
-        />
-    );
+        this.state = {
+            flatListReady: false,
+            data: [],
+            isLoading: false,
+            currentPage: 0,
+            scroll: true,
+            deleteId: 0,
+            refreshing: false
+        }
 
-    const sheetRef = React.useRef(null);
+        this.take = 10;
+        this.sheetRef = React.createRef();
 
-    const renderContent = () => (
-        <View
-            style={{
-                height: bottomSheetHeight,
-            }}
-        >
-            <FilterAuthor
-                onClose={() => sheetRef.current.snapTo(2)}
-            />
-        </View>
-    );
+        this.scrolled = this.scrolled.bind(this);
+        this.loadMore = this.loadMore.bind(this);
+        this.handleRefresh = this.handleRefresh.bind(this);
+        this.renderItem = this.renderItem.bind(this);
+        this.renderFooter = this.renderFooter.bind(this);
+    }
 
-    return (
-        <>
-            <View style={[styles.blur, { zIndex: blur }]}></View>
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={modalVisible}
-                onRequestClose={() => {
-                    setModalVisible(!modalVisible);
+    componentDidMount(prevProps, prevState, snapshot) {
+        this._unsubscribe = this.props.navigation.addListener('focus', () => {
+            this.setState({
+                flatListReady: false,
+                isLoading: true,
+                scroll: true,
+                data: [],
+                currentPage: 0,
+            }, () => this.getData())
+        });
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (this.state.flatListReady && prevState.currentPage != this.state.currentPage) {
+            this.setState({ isLoading: true });
+            this.getData();
+        }
+    }
+
+    componentWillUnmount() {
+        this._unsubscribe();
+    }
+
+    filterCount() {
+        let count = 0;
+
+        for (const key in this.props.filter) {
+            if (this.props.filter[key].toString().trim().length > 0) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    async getData() {
+        this.setState({ refreshing: false })
+
+        const list = await CRUDService.findAll("/mst-author", {
+            take: this.take,
+            skip: this.state.currentPage,
+            sort: "author_name,author_id",
+            ...this.props.filter
+        })
+
+        if (list) {
+            this.setState((previousState) => {
+                return {
+                    ...previousState,
+                    data: previousState.data.concat(list.data)
+                }
+            })
+
+            if (this.state.data.length >= list.count) {
+                this.setState({ scroll: false })
+            }
+
+            this.setState({ isLoading: false })
+        }
+    }
+
+    renderItem({ item }) {
+        return (
+            <AuthorItem
+                author_name={item.author_name}
+                author_year={item.author_year}
+                authority_type={item.authority_type}
+                auth_list={item.auth_list}
+                onEdit={() => this.props.navigation.push("FormAuthor", { action: "edit", id: item.author_id })}
+                onDelete={() => {
+                    this.setState({ deleteId: item.author_id })
+                    this.props.setModalVisible()
                 }}
-            >
-                <ModalDelete
-                    onCancel={() => setModalVisible(!modalVisible)}
-                    onDelete={() => setModalVisible(!modalVisible)}
-                />
-            </Modal>
-            <View style={styles.container}>
-                <Header title="Author"
-                    onBack={() => navigation.toggleDrawer()}
-                    onPressFilter={() => {
-                        setBlur(1);
-                        sheetRef.current.snapTo(1);
+            />
+        )
+    };
+
+    scrolled() {
+        this.setState({ flatListReady: true })
+    }
+
+    loadMore() {
+        if (!this.state.flatListReady) return null
+
+        if (this.state.scroll == true && this.state.isLoading == false) {
+            this.setState({ currentPage: this.state.data.length });
+        }
+    }
+
+    renderFooter() {
+        if (!this.state.isLoading) return null;
+
+        return (
+            <View style={styles.loader}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+            </View>
+        )
+    }
+
+    handleRefresh() {
+        this.setState({
+            flatListReady: false,
+            isLoading: true,
+            scroll: true,
+            data: [],
+            currentPage: 0,
+            refreshing: true
+        }, () => {
+            this.setState({ refreshing: false })
+            this.getData()
+        })
+    }
+
+    render() {
+        return (
+            <>
+                <Modal
+                    animationType="fade"
+                    transparent={true}
+                    visible={this.state.deleteId > 0}
+                    onRequestClose={() => {
+                        this.setState({ deleteId: 0 });
+                        this.props.setModalVisible()
                     }}
-                    onAdd={() => navigation.push("FormAuthor", { action: "add" })}
-                    styleTextTitle={{ flex: 2 }}
-                />
+                >
+                    <ModalDelete
+                        onCancel={() => {
+                            this.setState({ deleteId: 0 });
+                            this.props.setModalVisible()
+                        }}
+                        onSubmit={async () => {
+                            const deleted = await CRUDService.deleteOneById("/mst-author", this.state.deleteId);
+                            if (deleted) {
+                                const filtered = await this.state.data.filter(filter => filter.author_id != this.state.deleteId);
+                                this.setState({ data: filtered, deleteId: 0 });
+                                this.props.setModalVisible()
+                                Message.showToast('Data Deleted')
+                            }
+                        }}
+                    />
+                </Modal>
+                <View style={styles.container}>
+                    <Header title="Author"
+                        onBack={() => this.props.navigation.toggleDrawer()}
+                        onPressFilter={() => {
+                            this.props.navigation.push("FilterAuthor")
+                        }}
+                        onAdd={() => this.props.navigation.push("FormAuthor", { action: "add" })}
+                        styleTextTitle={{ flex: 5 }}
+                        filterCount={this.filterCount()}
+                    />
 
-                <FlatList
-                    data={DATA}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.id}
-                    contentContainerStyle={styles.list}
-                    showsVerticalScrollIndicator={false}
-                />
-            </View >
-            <BottomSheet
-                ref={sheetRef}
-                snapPoints={[windowHeight - statusBarHeight, windowHeight * 0.4, 0]}
-                initialSnap={2}
-                borderRadius={10}
-                renderContent={renderContent}
-                onCloseEnd={() => {
-                    setBlur(0)
-                }}
-            />
-        </>
-    )
+                    <FlatList
+                        onScroll={this.scrolled}
+                        data={this.state.data}
+                        renderItem={this.renderItem}
+                        keyExtractor={item => item.author_id}
+                        initialNumToRender={5}
+                        contentContainerStyle={styles.list}
+                        showsVerticalScrollIndicator={false}
+                        ListFooterComponent={this.renderFooter}
+                        onEndReached={this.loadMore}
+                        onEndReachedThreshold={0.3}
+                        ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+                        ListEmptyComponent={<EmptyList />}
+                        refreshing={this.state.refreshing}
+                        onRefresh={this.handleRefresh}
+                    />
+                </View >
+            </>
+        )
+    }
 }
 
-export default Author
-
 const styles = StyleSheet.create({
-    blur: {
-        position: 'absolute',
-        backgroundColor: COLORS.black,
-        width: '100%',
-        height: '100%',
-        opacity: 0.8,
-    },
     container: {
         flex: 1,
         backgroundColor: COLORS.white
     },
     list: {
-        paddingTop: 50
+        paddingTop: 48
     },
+    loader: {
+        marginTop: 10,
+        alignItems: 'center'
+    }
 })

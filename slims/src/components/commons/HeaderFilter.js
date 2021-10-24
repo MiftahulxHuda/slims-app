@@ -32,7 +32,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderTopLeftRadius: 10,
         borderTopRightRadius: 10,
-        justifyContent: 'center'
+        justifyContent: 'center',
+        // backgroundColor: '#FFFFFF',
+        shadowColor: '#333333',
+        shadowOffset: { width: -1, height: -3 },
+        shadowRadius: 2,
+        shadowOpacity: 0.4,
+        // elevation: 5,
+        // paddingTop: 20,
+        // borderTopLeftRadius: 20,
+        // borderTopRightRadius: 20,
     },
     title: {
         flexDirection: 'row',

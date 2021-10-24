@@ -1,37 +1,36 @@
-import React from 'react'
+import React, { PureComponent } from 'react'
 import { TouchableOpacity } from 'react-native'
 import { StyleSheet, Text, View } from 'react-native'
 
 import { COLORS, FONTS, SIZES } from '../../constants'
 import PopupMenu from '../commons/PopupMenu'
 
-const ItemStatusItem = (props) => {
-    return (
-        <TouchableOpacity onPress={props.onPress}>
+class ItemStatusItem extends PureComponent {
+    render() {
+        return (
             <View style={styles.item}>
                 <View style={styles.detail_item}>
-                    <Text style={styles.item_text}>{props.code}</Text>
-                    <Text style={styles.item_text}>{props.name}</Text>
+                    <Text style={styles.item_text}>{this.props.item_status_id}</Text>
+                    <Text style={styles.item_text}>{this.props.item_status_name}</Text>
                 </View>
                 <PopupMenu
                     size={SIZES.h3}
-                    onEdit={props.onEdit}
-                    onDelete={props.onDelete}
+                    onEdit={this.props.onEdit}
+                    onDelete={this.props.onDelete}
                 />
             </View>
-        </TouchableOpacity>
-    )
+        )
+    }
 }
 
-export default ItemStatusItem
+export default ItemStatusItem;
 
 const styles = StyleSheet.create({
     item: {
         flexDirection: 'row',
         backgroundColor: COLORS.white,
         padding: 10,
-        marginVertical: 15,
-        marginHorizontal: 12,
+        marginHorizontal: 16,
         elevation: 2,
         borderRadius: 8
     },
@@ -41,6 +40,6 @@ const styles = StyleSheet.create({
     },
     item_text: {
         ...FONTS.body4,
-        color: COLORS.black
+        color: COLORS.gray3
     },
 })

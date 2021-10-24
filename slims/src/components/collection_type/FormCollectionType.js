@@ -1,93 +1,163 @@
-import React from 'react'
-import { StyleSheet, View, ScrollView } from 'react-native'
-import Icon from 'react-native-vector-icons/Feather';
-import { Formik } from 'formik'
+import React, { PureComponent } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { withFormik } from 'formik'
 import * as yup from 'yup';
+import { connect } from 'react-redux';
+import { bindActionCreators } from '@reduxjs/toolkit';
 
-import { COLORS, FONTS, SIZES } from '../../constants'
-import DetailHeader from '../commons/DetailHeader'
+import { COLORS, FONTS } from '../../constants'
 import CustomTextInput from '../commons/CustomTextInput';
 import CustomButton from '../commons/CustomButton';
+import { setIsLoading } from '../../store/slice/loadingSlice';
+import CRUDService from '../../service/CRUDService.service';
+import Message from '../commons/Message';
 
-let schema = yup.object().shape({
-    name: yup.string().required("Name is required"),
-});
-
-const FormCollectionType = ({ route, navigation }) => {
-    const { action } = route.params;
-
-    let actionTitle = "";
-    if(action == "add") {
-        actionTitle = "Add";
-    } else {
-        actionTitle = "Edit";
+class MyForm extends PureComponent {
+    constructor(props) {
+        super(props)
     }
-    
-    return (
-        <View style={styles.container}>
-            <DetailHeader
-                title={actionTitle + " Collection Type"}
-                iconPosition="left"
-                icon={
-                    <Icon
-                        name="chevron-left"
-                        size={SIZES.h1}
-                        color={COLORS.primary}
-                        onPress={() => {
-                            navigation.popToTop();
-                        }}
-                    />
-                }
-            />
-            <ScrollView
-                contentContainerStyle={styles.formContentContainer}
-            >
-                <Formik
-                    initialValues={{ collection_type: '' }}
-                    validationSchema={schema}
-                    onSubmit={values => { console.log(values) }}
-                >
-                    {({ handleChange, handleBlur, handleSubmit, values, touched, errors, isValid }) => (
-                        <>
-                            <CustomTextInput
-                                label="Collection Type"
-                                required={true}
-                                onChangeText={handleChange('collection_type')}
-                                onBlur={handleBlur('collection_type')}
-                                value={values.collection_type}
-                                touched={touched.collection_type}
-                                error={errors.collection_type}
-                                containerStyle={{ marginTop: 10 }}
-                            />
 
-                            <CustomButton
-                                containerStyle={styles.container_submit}
-                                buttonStyle={styles.submit}
-                                titleStyle={styles.text_submit}
-                                title="Submit"
-                                onPress={handleSubmit}
-                            />
-                        </>
-                    )}
-                </Formik>
-            </ScrollView>
-        </View>
-    )
+    async findOneById(id) {
+        const findOneById = await CRUDService.findOneById(`${"/mst-coll-type"}/${id}`);
+        if (findOneById) {
+            this.props.setValues({
+                coll_type_name: findOneById.coll_type_name,
+            })
+        }
+    }
+
+    componentDidMount() {
+        if (this.props.route.params.action == "edit") {
+            this.findOneById(this.props.route.params.id)
+        }
+    }
+
+    getSnapshotBeforeUpdate(prevProps, prevState) {
+        if (this.props.isReset == true) {
+            return this.props.isReset;
+        }
+
+        return null;
+    }
+
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        if (snapshot != null) {
+            this.props.resetForm({ values: '' });
+            this.props.resetFilter();
+        }
+    }
+
+    render() {
+        const {
+            values,
+            touched,
+            errors,
+            handleChange,
+            handleBlur,
+            handleSubmit,
+        } = this.props;
+
+        return (
+            <>
+                <View style={styles.content}>
+                    <CustomTextInput
+                        label="Collection Type"
+                        required={true}
+                        onChangeText={handleChange('coll_type_name')}
+                        onBlur={handleBlur('coll_type_name')}
+                        value={values.coll_type_name}
+                        touched={touched.coll_type_name}
+                        error={errors.coll_type_name}
+                    />
+
+                    <CustomButton
+                        containerStyle={styles.container_submit}
+                        buttonStyle={styles.submit}
+                        titleStyle={styles.text_submit}
+                        title="Submit"
+                        onPress={handleSubmit}
+                    />
+                </View>
+            </>
+        )
+    }
 }
 
-export default FormCollectionType
+const schema = yup.object().shape({
+    coll_type_name: yup.string().required("Collection Type is required"),
+});
+
+const create = async (post) => {
+    const created = await CRUDService.create("/mst-coll-type", post);
+    return created;
+}
+
+const updateOneById = async (id, post) => {
+    const updated = await CRUDService.updateOneById("/mst-coll-type", id, post);
+    return updated;
+}
+
+const formikEnhancer = withFormik({
+    mapPropsToValues: (props) => {
+        return ({ coll_type_name: "" })
+    },
+    validationSchema: schema,
+    // enableReinitialize: true,
+    // Custom sync validation
+    // validate: values => {
+    //     const errors = {};
+
+    //     if (!values.name) {
+    //         errors.name = 'Required';
+    //     }
+
+    //     return errors;
+    // },
+
+    handleSubmit: async (values, { props }) => {
+        props.setIsLoading();
+
+        let req;
+        let messageToast;
+        if (props.route.params.action == "add") {
+            req = await create(values)
+            messageToast = "Data added";
+        } else {
+            req = await updateOneById(props.route.params.id, values);
+            messageToast = "Data updated";
+        }
+
+        if (req) {
+            props.setIsLoading();
+            Message.showToast(messageToast)
+            props.navigation.goBack();
+        } else {
+            props.setIsLoading();
+        }
+    },
+
+    // displayName: 'BasicForm',
+})(MyForm);
+
+function mapDispatchToProps(dispatch) {
+    return bindActionCreators(
+        {
+            setIsLoading
+        },
+        dispatch
+    );
+}
+
+export default connect(null, mapDispatchToProps)(formikEnhancer)
 
 const styles = StyleSheet.create({
-    container: {
+    content: {
         flex: 1,
-        backgroundColor: COLORS.white
-    },
-    formContentContainer: {
-        flexGrow: 1,
-        padding: 20
+        backgroundColor: COLORS.white,
+        padding: 16
     },
     container_submit: {
-        marginTop: 20
+        marginTop: 24
     },
     submit: {
         height: 50,

@@ -1,36 +1,63 @@
-import React from 'react'
-import { TouchableOpacity } from 'react-native'
-import { StyleSheet, Text, View } from 'react-native'
+import React, { PureComponent } from 'react'
+import { Image, StyleSheet, Text, View } from 'react-native'
 
-import { COLORS, FONTS, SIZES } from '../../constants'
+import { COLORS, FONTS, images, SIZES } from '../../constants'
+import { API_CONFIG } from '../../constants/api_config'
 import PopupMenu from '../commons/PopupMenu'
 
-const BibliographyItem = (props) => {
-    return (
-        <TouchableOpacity onPress={props.onPress}>
+class BibliographyItem extends PureComponent {
+    getCover() {
+        if (this.props.image) {
+            return {
+                uri: API_CONFIG.baseUrl + '/image_docs/' + this.props.image,
+            }
+        } else {
+            return images.cover;
+        }
+    }
+
+    countItems() {
+        let items = this.props.items;
+        if(items) {
+            items = items.split(" - ");
+            return items.length;
+        }
+
+        return 0;
+    }
+
+    render() {
+        return (
             <View style={styles.item}>
-                <View style={{ width: 50, height: 50, backgroundColor: COLORS.primary }}>
-                </View>
+                <Image
+                    style={{ width: 80, height: 100, alignSelf: 'center', borderRadius: 8 }}
+                    source={this.getCover()}
+                />
                 <View style={styles.detail_item}>
-                    <Text style={styles.item_text}>{props.title}</Text>
-                    <Text style={styles.item_text}>{props.author}</Text>
-                    <Text style={styles.item_text}>{props.isbn_issn}</Text>
-                    <Text style={styles.item_text}>{props.copies}</Text>
+                    <Text style={styles.item_title}>{this.props.title}</Text>
+                    <Text style={styles.item_author}>{this.props.author}</Text>
+                    <Text style={styles.item_publish}>{this.props.publish_place} {this.props.publish_year}</Text>
+                    <Text style={styles.item_text}>{this.props.isbn_issn}</Text>
+                    <Text style={styles.item_text}>{this.props.publisher}</Text>
+                    <Text style={styles.item_text}>Copies: {this.countItems()}</Text>
                 </View>
-                <PopupMenu size={SIZES.h3} />
+                <PopupMenu
+                    size={SIZES.h3}
+                    onEdit={this.props.onEdit}
+                    onDelete={this.props.onDelete}
+                />
             </View>
-        </TouchableOpacity>
-    )
+        )
+    }
 }
 
-export default BibliographyItem
+export default BibliographyItem;
 
 const styles = StyleSheet.create({
     item: {
         flexDirection: 'row',
         backgroundColor: COLORS.white,
         padding: 10,
-        marginVertical: 15,
         marginHorizontal: 12,
         elevation: 2,
         borderRadius: 8
@@ -41,6 +68,19 @@ const styles = StyleSheet.create({
     },
     item_text: {
         ...FONTS.body4,
-        color: COLORS.black
+        color: COLORS.gray1
+    },
+    item_title: {
+        ...FONTS.h4,
+        color: COLORS.primary
+    },
+    item_author: {
+        ...FONTS.body4,
+        color: COLORS.gray5,
+        fontStyle: 'italic'
+    },
+    item_publish: {
+        ...FONTS.body4,
+        color: COLORS.gray5,
     },
 })
